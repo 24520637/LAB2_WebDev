@@ -1,5 +1,41 @@
+"use strict";
+
 // Exercise 2 — TASK 2.1
+// Persistent state storage for hooks.
+// Do not recreate this array during rerenders.
 const stateStore = [];
+
+// Exercise 2 — TASK 2.2
+// Points to the next hook slot to access.
+let cursor = 0;
+
+/**
+ * Reset the hook pointer before every complete component render.
+ *
+ * Rules:
+ * - Hooks must always be called at the top level.
+ * - Hooks must be called in the same order on every render.
+ * - Do not call hooks conditionally or inside loops or nested functions.
+ */
+function resetCursor() {
+  cursor = 0;
+}
+
+// Exercise 2 — TASK 2.3
+/**
+ * Reserve the current hook position and advance the cursor once.
+ * The useState dispatcher can use this to select its state slot.
+ */
+function nextHookIndex() {
+  const hookIndex = cursor;
+  cursor += 1;
+  return hookIndex;
+}
+
+/** Test/debug helper: return the current cursor position. */
+function getCursor() {
+  return cursor;
+}
 
 function createTextElement(text) {
     return {
@@ -39,23 +75,18 @@ function createElement(type, props, ...children) {
     };
 }
 
-/*module.exports = {
-    createTextElement,
-    createElement
-};*/
-
 function renderToDOM(vNode) {
-    // TASK 2.1: Safely create text nodes
+    // Safely create text nodes
     if (vNode.type === "TEXT_ELEMENT") {
         return document.createTextNode(
             String(vNode.props.nodeValue ?? "")
         );
     }
 
-    // TASK 2.2: Create a real DOM element
+    // Create a real DOM element
     const dom = document.createElement(vNode.type);
 
-    // TASK 2.3: Safely apply properties and attributes
+    // Safely apply properties and attributes
     const props = vNode.props ?? {};
 
     Object.entries(props).forEach(([key, value]) => {
@@ -139,17 +170,14 @@ function renderToDOM(vNode) {
     return dom;
 }
 
-/*module.exports = {
-  createTextElement,
-  createElement,
-  renderToDOM
-};*/
-
 const MiniReact = {
   createTextElement,
   createElement,
   renderToDOM,
-  stateStore
+  stateStore,
+  resetCursor,
+  nextHookIndex,
+  getCursor
 };
 
 if (typeof module !== "undefined" && module.exports) {
