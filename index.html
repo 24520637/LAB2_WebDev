@@ -1,16 +1,17 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiniReact App</title>
-    <!-- Thư viện MiniReact load trước -->
-    <script src="js/mini-react.js" defer></script>
-    <!-- Logic ứng dụng của bạn load sau -->
-    <script src="js/app.js" defer></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A simple and accessible Todo application">
+  <title>MiniReact Todo App</title>
 </head>
 <body>
-    <!-- Thẻ root để app render giao diện vào -->
-    <div id="root"></div>
+  <main id="app" aria-busy="true">
+    <p>Loading Todo application...</p>
+  </main>
+
+  <script src="./js/mini-react.js" defer></script>
+  <script src="./js/app.js" defer></script>
 </body>
 </html>
