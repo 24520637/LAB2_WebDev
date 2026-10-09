@@ -1,3 +1,6 @@
+// Exercise 2 — TASK 2.1
+const stateStore = [];
+
 function createTextElement(text) {
     return {
         type: "TEXT_ELEMENT",
@@ -145,7 +148,8 @@ function renderToDOM(vNode) {
 const MiniReact = {
   createTextElement,
   createElement,
-  renderToDOM
+  renderToDOM,
+  stateStore
 };
 
 if (typeof module !== "undefined" && module.exports) {
