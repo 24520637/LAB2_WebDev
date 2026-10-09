@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiniReact - Test Runner</title>
-    <!-- Nhúng các file script theo đúng thứ tự -->
+    <title>MiniReact App</title>
+    <!-- Thư viện MiniReact load trước -->
     <script src="js/mini-react.js" defer></script>
-    <script src="js/test-runner.js" defer></script>
+    <!-- Logic ứng dụng của bạn load sau -->
+    <script src="js/app.js" defer></script>
 </head>
 <body>
-    <!-- Cây DOM sẽ được hàm renderToDOM trong test-runner.js tự động chèn vào đây -->
+    <!-- Thẻ root để app render giao diện vào -->
+    <div id="root"></div>
 </body>
 </html>

@@ -5,8 +5,6 @@
 // Persistent State Storage
 // ============================================================
 
-// Persistent storage for all useState hooks.
-// Do not recreate this array during rerenders.
 const stateStore = [];
 
 
@@ -15,53 +13,163 @@ const stateStore = [];
 // Hook Cursor Engine
 // ============================================================
 
-// Points to the next hook slot to access.
 let cursor = 0;
 
-/**
- * Reset the hook pointer before every complete component render.
- *
- * Rules:
- * - Hooks must always be called at the top level.
- * - Hooks must be called in the same order on every render.
- * - Do not call hooks conditionally or inside loops or nested functions.
- */
 function resetCursor() {
     cursor = 0;
 }
 
-/**
- * Reserve the current hook position and advance the cursor once.
- * The useState dispatcher can use this to select its state slot.
- */
 function nextHookIndex() {
     const hookIndex = cursor;
     cursor += 1;
     return hookIndex;
 }
 
-/**
- * Test/debug helper: return the current cursor position.
- */
 function getCursor() {
     return cursor;
 }
 
 
 // ============================================================
-// Exercise 2 — TASK 2.5
-// Reactive useState Closure Engine
+// Exercise 2 — TASKS 2.8 and 2.9
+// Root Event Delegation Hub
 // ============================================================
 
-// The application registers its complete VNode-tree render
-// function here. The state engine can trigger rerenders without
-// taking ownership of the application's mounting contract.
+// Store actual JavaScript handler functions.
+// Never execute event handler strings.
+const delegatedHandlers = new Map();
+
+let nextHandlerId = 1;
+
+// Remember which event types have listeners on each root.
+// WeakMap prevents the registry from keeping root elements alive.
+const delegatedRoots = new WeakMap();
+
+const DEFAULT_DELEGATED_EVENTS = [
+    "click",
+    "input",
+    "submit"
+];
+
+/**
+ * Clear handlers from the previous VNode render.
+ * The root event listeners remain installed.
+ */
+function resetDelegatedHandlers() {
+    delegatedHandlers.clear();
+    nextHandlerId = 1;
+}
+
+/**
+ * TASK 2.8: Set up event delegation.
+ *
+ * Only one listener per event type is installed on rootContainer.
+ * Calling this function repeatedly does not duplicate listeners.
+ *
+ * @param {Element} rootContainer
+ * @param {string[]} eventTypes
+ * @returns {Element}
+ */
+function setupEventDelegation(
+    rootContainer,
+    eventTypes = DEFAULT_DELEGATED_EVENTS
+) {
+    if (
+        !rootContainer ||
+        typeof rootContainer.addEventListener !== "function"
+    ) {
+        throw new TypeError(
+            "setupEventDelegation expects a DOM root container."
+        );
+    }
+
+    let installedTypes = delegatedRoots.get(rootContainer);
+
+    if (!installedTypes) {
+        installedTypes = new Set();
+        delegatedRoots.set(rootContainer, installedTypes);
+    }
+
+    for (const rawType of eventTypes) {
+        const eventType = String(rawType).toLowerCase();
+
+        if (!eventType || installedTypes.has(eventType)) {
+            continue;
+        }
+
+        // The ONLY listener for this event type is on the root.
+        rootContainer.addEventListener(
+            eventType,
+            function delegatedListener(event) {
+                const target = event.target;
+
+                if (!target) {
+                    return;
+                }
+
+                // Ignore events originating outside this root.
+                if (
+                    typeof rootContainer.contains === "function" &&
+                    !rootContainer.contains(target)
+                ) {
+                    return;
+                }
+
+                // Walk from the event target toward the root.
+                // This supports nested targets, such as a span
+                // inside a button that has an onClick handler.
+                let element = target;
+
+                while (
+                    element &&
+                    element !== rootContainer
+                ) {
+                    if (
+                        typeof element.getAttribute === "function"
+                    ) {
+                        const handlerId = element.getAttribute(
+                            "data-mini-react-handler-id"
+                        );
+
+                        const handlersForElement =
+                            handlerId &&
+                            delegatedHandlers.get(handlerId);
+
+                        const handler =
+                            handlersForElement &&
+                            handlersForElement.get(eventType);
+
+                        if (typeof handler === "function") {
+                            // Pass the original event object.
+                            // Bind `this` to the matching element.
+                            handler.call(element, event);
+
+                            // Stop after the nearest matching handler.
+                            return;
+                        }
+                    }
+
+                    element = element.parentElement;
+                }
+            }
+        );
+
+        installedTypes.add(eventType);
+    }
+
+    return rootContainer;
+}
+
+
+// ============================================================
+// Exercise 2 — TASK 2.5
+// Reactive useState Dispatcher
+// ============================================================
+
 let appRenderFunction = null;
 
 /**
  * Register the application's full render function.
- *
- * The callback should rebuild and mount the complete VNode tree.
  */
 function setRenderApp(renderFunction) {
     if (typeof renderFunction !== "function") {
@@ -74,9 +182,8 @@ function setRenderApp(renderFunction) {
 }
 
 /**
- * Restart the application's complete render cycle.
- *
- * Reset the cursor immediately before rebuilding the VNode tree.
+ * Re-render the application.
+ * Reset the hook cursor immediately before rendering.
  */
 function renderApp() {
     if (typeof appRenderFunction !== "function") {
@@ -88,37 +195,29 @@ function renderApp() {
 
     resetCursor();
 
+    // Discard old VNode handler registrations.
+    // The root listeners are not removed or re-added.
+    resetDelegatedHandlers();
+
     return appRenderFunction();
 }
 
 /**
- * Return the state at the current hook slot and a setter
- * bound to that specific slot.
+ * Create a state hook with a setter bound to its original slot.
  *
- * Supports:
- * - Initial state values
- * - Direct state updates
- * - Functional state updates
- * - Independent state slots
- * - Automatic application rerendering
+ * Supports direct updates:
+ *     setCount(5)
+ *
+ * Supports functional updates:
+ *     setCount(previous => previous + 1)
  */
 function useState(initialValue) {
-    // Initialize the current state slot if it has no value.
     if (stateStore[cursor] === undefined) {
         stateStore[cursor] = initialValue;
     }
 
-    // Freeze this hook's slot so its setter always updates
-    // the correct state, regardless of the current cursor.
     const frozenCursor = cursor;
 
-    /**
-     * Update the state and rerender the application.
-     *
-     * newValue may be:
-     * - A direct value, e.g. setState(10)
-     * - A function, e.g. setState(prevState => prevState + 1)
-     */
     function setState(newValue) {
         const previousValue = stateStore[frozenCursor];
 
@@ -127,14 +226,11 @@ function useState(initialValue) {
                 ? newValue(previousValue)
                 : newValue;
 
-        // Rebuild the application with the updated state.
         renderApp();
     }
 
-    // Move to the next hook slot.
     cursor++;
 
-    // Return the current state and its setter.
     return [
         stateStore[frozenCursor],
         setState
@@ -192,50 +288,77 @@ function createElement(type, props, ...children) {
 
 // ============================================================
 // Exercise 1 — renderToDOM()
-// Secure VNode-to-DOM conversion
+// Secure VNode-to-DOM Conversion
 // ============================================================
 
 function renderToDOM(vNode) {
-    // Safely create text nodes.
+    // Create text nodes safely.
     if (vNode.type === "TEXT_ELEMENT") {
         return document.createTextNode(
             String(vNode.props.nodeValue ?? "")
         );
     }
 
-    // Create a real DOM element.
+    // Create a DOM element.
     const dom = document.createElement(vNode.type);
 
-    // Safely apply properties and attributes.
     const props = vNode.props ?? {};
 
     Object.entries(props).forEach(([key, value]) => {
-        // Children are handled recursively below.
+        // Children are rendered recursively below.
         if (key === "children" || value == null) {
             return;
         }
 
-        // Prevent inline event-handler strings such as:
-        // onclick="alert(1)"
-        //
-        // Only actual functions can be registered as listeners.
-        if (/^on/i.test(key)) {
+        // ----------------------------------------------------
+        // Event handler registration for root delegation.
+        // Do NOT attach listeners to child elements here.
+        // ----------------------------------------------------
+        if (/^on[a-z]/i.test(key)) {
+            // Only actual functions are accepted.
+            // Strings are never executed.
             if (typeof value !== "function") {
                 return;
             }
 
             const eventType = key.slice(2).toLowerCase();
 
-            // Ignore malformed event property names.
             if (!eventType) {
                 return;
             }
 
-            dom.addEventListener(eventType, value);
+            // Reuse this element's handler ID if it already
+            // has a handler for another event type.
+            let handlerId = dom.getAttribute(
+                "data-mini-react-handler-id"
+            );
+
+            if (!handlerId) {
+                handlerId = String(nextHandlerId++);
+
+                dom.setAttribute(
+                    "data-mini-react-handler-id",
+                    handlerId
+                );
+
+                delegatedHandlers.set(
+                    handlerId,
+                    new Map()
+                );
+            }
+
+            // Store the real function in the registry.
+            delegatedHandlers
+                .get(handlerId)
+                .set(eventType, value);
+
             return;
         }
 
-        // Block dangerous URL schemes in URL-bearing attributes.
+        // ----------------------------------------------------
+        // Protect URL-bearing attributes against dangerous
+        // JavaScript and data URL schemes.
+        // ----------------------------------------------------
         const urlAttributes = new Set([
             "href",
             "src",
@@ -249,10 +372,11 @@ function renderToDOM(vNode) {
                 return;
             }
 
-            // Remove whitespace and control characters before
-            // checking the URL scheme.
             const normalizedUrl = value
-                .replace(/[\u0000-\u0020\u007F-\u009F]/g, "")
+                .replace(
+                    /[\u0000-\u0020\u007F-\u009F]/g,
+                    ""
+                )
                 .toLowerCase();
 
             if (
@@ -264,13 +388,13 @@ function renderToDOM(vNode) {
             }
         }
 
-        // Map React-style className to the HTML class attribute.
+        // Map className to the HTML class attribute.
         if (key === "className") {
             dom.setAttribute("class", String(value));
             return;
         }
 
-        // Ignore unsupported object/function values as attributes.
+        // Do not serialize objects or functions as attributes.
         if (
             typeof value === "object" ||
             typeof value === "function"
@@ -278,18 +402,22 @@ function renderToDOM(vNode) {
             return;
         }
 
-        // Preserve ARIA attributes, roles, IDs, titles,
-        // tabIndex, and other supported primitive attributes.
+        // Preserve normal attributes, IDs, roles, ARIA attributes,
+        // tabIndex, titles, and other primitive values.
         dom.setAttribute(key, String(value));
     });
 
-    // Recursively render and append child VNodes.
+    // Recursively create and append children.
     const children = Array.isArray(props.children)
         ? props.children
         : [];
 
     children.forEach(child => {
-        if (child != null && typeof child !== "boolean") {
+        if (
+            child !== null &&
+            child !== undefined &&
+            typeof child !== "boolean"
+        ) {
             dom.appendChild(renderToDOM(child));
         }
     });
@@ -303,21 +431,23 @@ function renderToDOM(vNode) {
 // ============================================================
 
 const MiniReact = {
-    // VNode creation and DOM rendering
+    // VNode factory and renderer
     createTextElement,
     createElement,
     renderToDOM,
 
-    // State storage and cursor engine
+    // State engine
     stateStore,
     resetCursor,
     nextHookIndex,
     getCursor,
-
-    // Reactive state engine
     useState,
     setRenderApp,
-    renderApp
+    renderApp,
+
+    // Event delegation
+    setupEventDelegation,
+    resetDelegatedHandlers
 };
 
 
@@ -325,12 +455,15 @@ const MiniReact = {
 // Module Exports
 // ============================================================
 
-// Support Node.js / CommonJS.
-if (typeof module !== "undefined" && module.exports) {
+// Node.js / CommonJS
+if (
+    typeof module !== "undefined" &&
+    module.exports
+) {
     module.exports = MiniReact;
 }
 
-// Support browser usage.
+// Browser
 if (typeof window !== "undefined") {
     window.MiniReact = MiniReact;
 }
