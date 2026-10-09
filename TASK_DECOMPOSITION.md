@@ -261,3 +261,434 @@ The exercise is complete when:
 
 1. `feat(core): implement createElement factory`
 2. `feat(core): implement renderToDOM`
+
+---
+
+## Exercise 2: Reactive State Machine & Delegation Hub
+
+## 1. Project Objective
+
+Build a lightweight reactive state management and event delegation system
+that extends the Mini-React engine from Exercise 1.
+
+The implementation must provide:
+- `stateStore` for storing component state.
+- A `resetCursor` engine for tracking state positions between renders.
+- A reactive `useState` dispatcher for updating state and triggering rerenders.
+- Root-level event delegation to avoid attaching unnecessary event listeners
+  to individual DOM elements.
+- A reactive Todo application demonstrating the complete state and event flow.
+
+The solution must preserve the security, accessibility, testing, and Git
+engineering conventions established in Exercise 1.
+
+---
+
+## 2. Work Breakdown Structure (WBS)
+
+### EPIC 1: Reactive State Store and Cursor Engine
+
+**Objective:** Establish predictable state storage and cursor management
+for reactive rendering.
+
+#### TASK 2.1: implement_state_store
+
+- [ ] Implement `stateStore` in the state-management module
+      (for example, `js/mini-react.js` or the existing state module).
+
+**Implementation Details:**
+- Create a central array or equivalent ordered structure to store hook state.
+- Keep state values indexed by hook position.
+- Preserve existing state values across rerenders.
+- Avoid recreating or clearing the entire state store during normal rerenders.
+- Keep the implementation compatible with the existing VNode and DOM mounting
+  APIs from Exercise 1.
+
+**Acceptance Criteria:**
+- [ ] `stateStore` is initialized before the first component render.
+- [ ] Each state hook has a stable position in the store.
+- [ ] Existing state values are preserved across rerenders.
+- [ ] State entries are not unintentionally overwritten by unrelated hooks.
+- [ ] The state store is accessible to the `useState` dispatcher.
+- [ ] No DOM manipulation is performed directly by the state store.
+- [ ] Tests verify initial state storage and persistence across rerenders.
+
+#### TASK 2.2: implement_reset_cursor_engine
+
+- [ ] Implement the state cursor and `resetCursor` mechanism in the
+      state-management module.
+
+**Implementation Details:**
+- Maintain a cursor representing the next state slot to be read or written.
+- Reset the cursor before each component render.
+- Increment the cursor whenever a state hook is invoked.
+- Ensure state hooks are read in a deterministic order.
+- Document the requirement that hooks must be called consistently across
+  renders.
+
+**Acceptance Criteria:**
+- [ ] The cursor starts at the first state slot before rendering.
+- [ ] Each `useState` call advances the cursor exactly once.
+- [ ] Multiple state hooks use separate, predictable slots.
+- [ ] The cursor resets before every complete component rerender.
+- [ ] Existing state values are retrieved from their correct slots.
+- [ ] Tests verify cursor reset and ordering across consecutive renders.
+
+#### TASK 2.3: verify_state_store_and_cursor
+
+- [ ] Validate the state store and cursor engine before integrating
+      the reactive dispatcher.
+
+**Implementation Details:**
+- Create a minimal component or test fixture that invokes multiple state hooks.
+- Render the component repeatedly.
+- Verify that state values remain associated with their original hook positions.
+- Test initial values, updated values, and rerender behavior.
+
+**Acceptance Criteria:**
+- [ ] The first hook receives the first state slot.
+- [ ] The second hook receives a distinct state slot.
+- [ ] Updating one state slot does not overwrite another slot.
+- [ ] Cursor positions are reset correctly before subsequent renders.
+- [ ] Tests pass without introducing changes to the existing mounting contract.
+
+#### TASK 2.4: commit_state_store_and_cursor
+
+- [ ] Commit the completed state store and cursor engine.
+
+**Acceptance Criteria:**
+- [ ] `stateStore` and `resetCursor` are implemented and tested.
+- [ ] State positions remain stable across rerenders.
+- [ ] Only relevant files are staged.
+- [ ] The commit follows the required message exactly:
+
+  `feat(state): implement stateStore and resetCursor engine`
+
+---
+
+### EPIC 2: Reactive useState Dispatcher
+
+**Objective:** Implement state retrieval and updates that trigger reactive
+component rerenders.
+
+#### TASK 2.5: implement_reactive_use_state_dispatcher
+
+- [ ] Implement the `useState` dispatcher in the state-management module.
+
+**Implementation Details:**
+- Read the current state slot using the state cursor.
+- Initialize the slot with the provided initial value when it has not been set.
+- Return the current state value and a setter function.
+- Make the setter update the corresponding state slot.
+- Trigger the application's rendering function after a state update.
+- Ensure the setter updates its original state slot rather than depending on
+  whichever cursor position happens to be active later.
+- Support functional updates if required by the application's state contract.
+
+**Acceptance Criteria:**
+- [ ] `useState(initialValue)` returns the initial value on the first render.
+- [ ] The returned setter updates the correct state slot.
+- [ ] Updated values survive subsequent renders.
+- [ ] Calling the setter triggers a rerender.
+- [ ] Multiple state hooks maintain independent values.
+- [ ] State updates do not depend on a stale or incorrect cursor position.
+- [ ] Tests verify direct updates and functional updates if implemented.
+- [ ] State initialization does not overwrite existing values during rerenders.
+
+#### TASK 2.6: verify_reactive_rerendering
+
+- [ ] Test the complete state-update and rerender cycle.
+
+**Implementation Details:**
+- Build a small test component with a state value and an interactive control.
+- Trigger the setter through the control.
+- Confirm that the new value is reflected in the rendered interface.
+- Repeat the interaction to verify that state is preserved between updates.
+
+**Acceptance Criteria:**
+- [ ] The initial state appears correctly in the interface.
+- [ ] An interaction updates the state through the setter.
+- [ ] The component rerenders with the updated state.
+- [ ] Repeated updates work without refreshing the browser.
+- [ ] Unrelated state slots remain unchanged.
+- [ ] The browser console contains no unexpected errors.
+
+#### TASK 2.7: commit_reactive_use_state_dispatcher
+
+- [ ] Commit the completed reactive `useState` dispatcher.
+
+**Acceptance Criteria:**
+- [ ] The state dispatcher and rerender mechanism are implemented and tested.
+- [ ] State updates produce the expected interface updates.
+- [ ] Only relevant files are staged.
+- [ ] The commit follows the required message exactly:
+
+  `feat(state): implement reactive useState dispatcher`
+
+---
+
+### EPIC 3: Root Event Delegation Hub
+
+**Objective:** Centralize event handling at the application root and route
+events to the appropriate VNode-defined handlers.
+
+#### TASK 2.8: implement_root_event_delegation
+
+- [ ] Implement the root event delegation listener in the event-management
+      module.
+
+**Implementation Details:**
+- Attach delegated event listeners to the application root.
+- Identify the event type and target element when an event occurs.
+- Resolve the corresponding registered handler for the target element.
+- Invoke the handler with the appropriate event object and context.
+- Ensure event properties defined on VNodes are compatible with the
+  delegation mechanism.
+- Avoid attaching duplicate root listeners during ordinary rerenders.
+
+**Acceptance Criteria:**
+- [ ] Required event types are delegated through the application root.
+- [ ] Clicking a nested interactive element invokes its intended handler.
+- [ ] Event handlers receive the expected event information.
+- [ ] Events from unrelated elements do not invoke incorrect handlers.
+- [ ] Repeated rendering does not attach duplicate root listeners.
+- [ ] Event handling remains compatible with the `renderToDOM()` contract.
+- [ ] No arbitrary JavaScript strings are evaluated as event handlers.
+- [ ] Tests verify delegation for the event types supported by the project.
+
+#### TASK 2.9: verify_event_handler_registration
+
+- [ ] Verify handler registration, lookup, and invocation.
+
+**Implementation Details:**
+- Register handlers for representative controls.
+- Dispatch supported events from the browser or a test environment.
+- Verify that the correct handler runs once for each intended event.
+- Verify that nested targets are handled according to the delegation design.
+- Check that rerendering does not leave duplicate or stale registrations.
+
+**Acceptance Criteria:**
+- [ ] A registered handler runs when its intended event occurs.
+- [ ] A handler is not invoked multiple times because of duplicate registration.
+- [ ] Unsupported or unregistered events are handled safely.
+- [ ] Nested event targets are resolved consistently.
+- [ ] Tests pass after repeated renders and interactions.
+
+#### TASK 2.10: commit_root_event_delegation
+
+- [ ] Commit the completed root event delegation listener.
+
+**Acceptance Criteria:**
+- [ ] Root event delegation is implemented and tested.
+- [ ] Supported events reach their intended handlers.
+- [ ] Repeated rerenders do not create duplicate root listeners.
+- [ ] Only relevant files are staged.
+- [ ] The commit follows the required message exactly:
+
+  `feat(events): attach root event delegation listener`
+
+---
+
+### EPIC 4: Reactive Todo Application
+
+**Objective:** Integrate the state store, reactive dispatcher, mounting engine,
+and root event delegation into a working Todo application.
+
+#### TASK 2.11: assemble_semantic_todo_interface
+
+- [ ] Implement the Todo application's semantic structure and initial UI.
+
+**Affected File:**
+- `index.html`
+- The existing application entry file, such as `js/app.js`
+
+**Implementation Details:**
+- Create an application root for mounting the Todo interface.
+- Build the UI using `createElement()` and the existing VNode rendering engine.
+- Include a page heading, a labeled task input, an Add button, and a task list.
+- Use semantic HTML elements and meaningful accessible names.
+- Include an appropriate empty-state message when no tasks exist.
+
+**Acceptance Criteria:**
+- [ ] The application mounts through the existing VNode-to-DOM pipeline.
+- [ ] The interface uses semantic HTML elements appropriately.
+- [ ] The task input has a programmatically associated label.
+- [ ] Interactive controls have accessible names.
+- [ ] The empty state is understandable when the task list is empty.
+- [ ] The layout remains usable with keyboard navigation.
+- [ ] No `innerHTML` is used to render task text.
+
+#### TASK 2.12: implement_reactive_todo_operations
+
+- [ ] Implement the Todo operations using the reactive state dispatcher.
+
+**Affected File:**
+- The existing application entry file, such as `js/app.js`
+
+**Implementation Details:**
+- Store the task list using `useState`.
+- Add tasks through the Add button or supported form submission.
+- Update the state store when a task is added.
+- Render the current task list from state on each render.
+- Handle empty or whitespace-only task input according to the application's
+  validation contract.
+- Display task content as text rather than interpreting it as HTML.
+
+**Acceptance Criteria:**
+- [ ] A user can add a valid task.
+- [ ] Adding a task updates state and triggers a rerender.
+- [ ] The displayed task list reflects the latest state.
+- [ ] Empty or whitespace-only input is handled consistently.
+- [ ] Task text containing HTML-like characters remains inert.
+- [ ] Existing tasks remain visible after subsequent additions.
+- [ ] The interface does not require a full-page reload to update.
+
+#### TASK 2.13: integrate_delegated_todo_events
+
+- [ ] Connect Todo controls to the root event delegation system.
+
+**Affected File:**
+- The event-management module
+- The existing application entry file, such as `js/app.js`
+
+**Implementation Details:**
+- Register the Add button and form events through the delegation mechanism.
+- Connect delegated event handlers to the relevant state setters.
+- Prevent duplicate submissions when both form and button handling could
+  otherwise process the same user action.
+- Ensure rerendered controls continue to respond to delegated events.
+
+**Acceptance Criteria:**
+- [ ] Todo interactions use the root delegation mechanism.
+- [ ] Adding a task invokes the intended operation once.
+- [ ] Rerendered controls continue to work.
+- [ ] No duplicate event execution occurs during normal interactions.
+- [ ] State updates and rendered task content remain synchronized.
+- [ ] Keyboard activation and form submission behave consistently.
+
+#### TASK 2.14: verify_checkpoint2_zero_orphan_listeners
+
+- [ ] Run `checkpoint2-verify.js` to verify listener lifecycle behavior.
+
+**Affected File:**
+- `checkpoint2-verify.js`
+- Any event-management module required by the verification fixture
+
+**Implementation Details:**
+- Execute the provided checkpoint verification script using the project's
+  intended test environment.
+- Verify that delegated root listeners are not attached repeatedly during
+  rerenders.
+- Verify that removed or replaced DOM elements do not retain independently
+  attached application event listeners.
+- Confirm that handler registrations and event routing follow the project's
+  delegation contract.
+- Review the script's output and investigate any failed assertions.
+
+**Acceptance Criteria:**
+- [ ] `checkpoint2-verify.js` runs successfully in the intended environment.
+- [ ] The verification reports zero orphan listeners according to its checks.
+- [ ] Repeated rerenders do not create duplicate root listeners.
+- [ ] Removed or replaced elements do not retain unintended application
+      listeners.
+- [ ] Expected events are handled once by the intended delegated handler.
+- [ ] All checkpoint assertions pass.
+- [ ] The verification result is recorded before the final integration commit.
+
+**Verification Note:**
+- Do not claim that orphan listeners are absent solely because the interface
+  appears to work. Use the actual `checkpoint2-verify.js` results.
+- If the verifier is missing, fails to execute, or does not inspect listener
+  lifecycle behavior, record that limitation and resolve it before marking
+  this task complete.
+
+#### TASK 2.15: accessibility_and_regression_audit
+
+- [ ] Verify the completed Todo application for accessibility, security,
+      and regressions.
+
+**Affected File:**
+- The application entry file
+- The relevant stylesheets
+- Existing integration and checkpoint test files
+
+**Implementation Details:**
+- Test keyboard navigation and visible focus indicators.
+- Inspect accessible names, roles, and semantic landmarks in browser DevTools.
+- Check color contrast for text and interactive controls.
+- Test task input containing HTML-like and script-like text.
+- Rerun the existing VNode, mounting, state, event, and checkpoint tests.
+
+**Acceptance Criteria:**
+- [ ] All interactive controls can be operated using the keyboard.
+- [ ] Focus indicators are visible.
+- [ ] Accessible names and semantic structure are understandable.
+- [ ] Normal-sized text meets the 4.5:1 contrast requirement where applicable.
+- [ ] Task content is displayed as text and is not executed as HTML or JavaScript.
+- [ ] Existing tests pass without unexpected regressions.
+- [ ] The browser console contains no unexpected errors.
+- [ ] No full WCAG 2.2 AA compliance claim is made solely from automated
+      test results.
+
+#### TASK 2.16: commit_reactive_todo_application
+
+- [ ] Commit the integrated reactive Todo application.
+
+**Acceptance Criteria:**
+- [ ] The Todo interface integrates the state store and reactive dispatcher.
+- [ ] Root event delegation supports the intended Todo interactions.
+- [ ] The complete application renders and updates correctly.
+- [ ] `checkpoint2-verify.js` passes its zero-orphan-listener checks.
+- [ ] Relevant accessibility, security, and regression checks pass.
+- [ ] Only relevant files are staged.
+- [ ] The commit follows the required message exactly:
+
+  `feat(ui): assemble reactive todo application`
+
+---
+
+## 3. Engineering Constraints
+
+- [ ] Preserve the Exercise 1 VNode schema and rendering contract.
+- [ ] Keep state storage separate from DOM rendering responsibilities.
+- [ ] Reset the state cursor before every complete component render.
+- [ ] Maintain a deterministic hook call order across renders.
+- [ ] Ensure state setters update their original state slots.
+- [ ] Use root event delegation according to the project's event contract.
+- [ ] Avoid duplicate root listener registration during rerenders.
+- [ ] Do not introduce `innerHTML`, `eval()`, or `new Function()` for
+      rendering or event execution.
+- [ ] Render user-provided task text using safe text APIs.
+- [ ] Use semantic HTML and accessible names for interactive controls.
+- [ ] Keep work packages independently verifiable.
+- [ ] Run the checkpoint verifier before marking the listener audit complete.
+- [ ] Do not mark an Acceptance Criterion complete without testing it.
+
+---
+
+## 4. Definition of Done (DoD)
+
+Exercise 2 is complete when:
+
+- [ ] `stateStore` stores state in stable hook positions.
+- [ ] `resetCursor` resets the hook cursor before every render.
+- [ ] `useState` initializes, retrieves, and updates state correctly.
+- [ ] State updates trigger the expected rerender.
+- [ ] Root event delegation routes supported events correctly.
+- [ ] Repeated rerenders do not create duplicate root listeners.
+- [ ] The reactive Todo application supports adding tasks.
+- [ ] Task text is rendered safely.
+- [ ] `checkpoint2-verify.js` passes its zero-orphan-listener checks.
+- [ ] Applicable accessibility and regression checks pass.
+- [ ] All four required Git commits exist with the exact messages.
+- [ ] The final working tree is reviewed for unintended changes.
+- [ ] All applicable WBS Acceptance Criteria are checked only after verification.
+
+---
+
+## 5. Required Git Commit Sequence
+
+1. `feat(state): implement stateStore and resetCursor engine`
+2. `feat(state): implement reactive useState dispatcher`
+3. `feat(events): attach root event delegation listener`
+4. `feat(ui): assemble reactive todo application`

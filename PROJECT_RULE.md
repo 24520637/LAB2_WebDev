@@ -11,20 +11,25 @@
 - Advise on Git commands, commit workflows, and project architecture.
 - Analyze flow diagrams (Flowchart/Sequence) using Markdown/Mermaid.
 
-## 3. Strict Prohibitions (DON'Ts)
-- DO NOT generate complete code files (`mini-react.js`, `test-runner.js`, or `index.html`) unless receiving a prompt specifically requesting that execution task.
-- DO NOT use `innerHTML`, `outerHTML`, or `document.write()` under any circumstances to prevent XSS vulnerabilities.
-- DO NOT use non-semantic `<div>` or `<span>` tags arbitrarily when Semantic HTML can be used instead (`<main>`, `<header>`, `<section>`, `<article>`, `<button>`).
-- DO NOT skip WCAG 2.2 AA compliance checks (must ensure ARIA attributes, color contrast, and keyboard accessibility for interactive elements).
+## 3. Strict Prohibitions & Deprecated Patterns (DON'Ts)
+- **BANNED Variable Scoping**: `var` scoping & implicit globals -> **MUST USE** `const` & `let`.
+- **BANNED Keyboard Events**: `keypress` & `e.keyCode` -> **MUST USE** `keydown` & `e.key` / `e.code`.
+- **BANNED Direct HTML Injection**: Raw `innerHTML`, `outerHTML`, or `document.write()` injection -> **MUST USE** DOM APIs (`document.createElement`, `replaceChildren`) or safe text nodes/`textContent` for XSS Prevention.
+- **BANNED Inline Handlers**: Inline event handlers (e.g., `onclick="..."`, `onkeypress="..."`) -> **MUST USE** programmatic `addEventListener` or centralized Event Delegation.
+- **BANNED Outdated Tools**: Outdated Babel standalones -> **MUST USE** modern bundlers (Vite/ESBuild) & JSX Transform.
+- **BANNED Elements**: Arbitrary non-semantic `<div>` or `<span>` tags when Semantic HTML can be used instead (`<main>`, `<header>`, `<section>`, `<article>`, `<button>`).
+- **BANNED Accessibility Omissions**: DO NOT skip WCAG 2.2 AA compliance checks.
 
-## 4. Mandatory Technical Constraints
+## 4. Mandatory Technical Constraints & Modern Baseline
 1. **Virtual Node Schema**:
    - All text vNodes must have `type: 'TEXT_ELEMENT'`.
-   - The `props` structure must always contain a `children` object (an array of vNodes).
-2. **XSS Protection Guard**:
+   - The `props` structure must always contain a `children` array (an array of vNodes).
+2. **XSS Protection Guard & Safe DOM Mounting**:
    - Plain text strings MUST be converted using `document.createTextNode()` or assigned via `textContent`.
+   - Dynamic target updates should use modern DOM APIs like `target.replaceChildren(el)`.
 3. **Event & DOM Mapping**:
-   - Properties starting with `on` (e.g., `onClick`) must be attached using `addEventListener` (convert the key to lowercase and remove the `on` prefix).
+   - Properties starting with `on` (e.g., `onClick`) must be attached using `addEventListener` (convert key to lowercase, remove `on` prefix).
+   - Listen for modern events (`keydown` instead of `keypress`) and read `e.key` (e.g., `e.key === 'Enter'`) instead of `e.keyCode`.
    - `className` must map to the real DOM's `class` attribute.
 4. **WCAG 2.2 AA Compliance**:
    - Buttons (`<button>`) must have an accessible name and be fully navigable via keyboard (visible focus indicator, supporting Keydown Enter/Space).
