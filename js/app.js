@@ -2,6 +2,12 @@
 
 (() => {
   const {
+    LifecycleState,
+    LifecycleEvent,
+    transitionState
+  } = window.LifecycleStateMachine || {};
+  const { renderDataView } = window.DataView || {};
+  const {
     createElement,
     renderToDOM,
     useState,
@@ -10,18 +16,72 @@
     setupEventDelegation
   } = window.MiniReact;
 
-  // Lấy các module loader và data view từ window (nếu dùng IIFE / Global scripts)
-  // Hoặc dùng window.AsyncDataLoader / window.DataView tùy theo cách bạn export ở các file kia
-  const { createDataLoader } = window.AsyncDataLoader || {};
-  const { renderDataView } = window.DataView || {};
-
   const root = document.getElementById("app");
+  const dataContainer = document.getElementById("data-container");
 
   if (!root) {
     throw new Error('Application root "#app" was not found.');
   }
 
   let nextTaskId = 1;
+
+  let currentState = LifecycleState.IDLE;
+  let currentData = null;
+  let currentError = null;
+
+  function loadData() {
+    if (currentState === LifecycleState.LOADING) {
+      return;
+    }
+
+    if (
+      currentState === LifecycleState.IDLE ||
+      currentState === LifecycleState.SUCCESS
+    ) {
+      currentState = transitionState(currentState, LifecycleEvent.LOAD);
+    } else if (currentState === LifecycleState.ERROR) {
+      currentState = transitionState(currentState, LifecycleEvent.RETRY);
+    }
+
+    updateDataFeedView();
+
+    setTimeout(() => {
+      try {
+        currentState = transitionState(currentState, LifecycleEvent.RESOLVE);
+        currentData = [
+          "Modern React Architecture",
+          "Virtual DOM & VNode Mechanics",
+          "Resilient State Machines"
+        ];
+        currentError = null;
+      } catch (err) {
+        currentError = err.message || "Unable to load data.";
+        currentState = transitionState(currentState, LifecycleEvent.REJECT);
+      }
+
+      updateDataFeedView();
+    }, 1500);
+  }
+
+  function handleRetry() {
+    loadData();
+  }
+
+  function updateDataFeedView() {
+    if (dataContainer) {
+      renderDataView(
+        dataContainer,
+        {
+          state: currentState,
+          data: currentData,
+          error: currentError
+        },
+        {
+          onRetry: handleRetry
+        }
+      );
+    }
+  }
 
   function TodoApp() {
     const [tasks, setTasks] = useState([]);
@@ -136,7 +196,7 @@
         )
       ),
 
-      // Task list container (Dùng vùng chứa riêng cho dữ liệu nếu muốn kết hợp loader)
+      // Task list container
       createElement(
         "section",
         { "aria-labelledby": "task-list-title" },
@@ -198,11 +258,22 @@
     const appVNode = TodoApp();
     const appDOM = renderToDOM(appVNode);
 
-    root.replaceChildren(appDOM);
+    if (dataContainer) {
+      root.replaceChildren(appDOM, dataContainer);
+    } else {
+      root.replaceChildren(appDOM);
+    }
+
     root.removeAttribute("aria-busy");
   });
 
   setupEventDelegation(root, ["click", "input", "submit"]);
+  if (dataContainer) {
+    setupEventDelegation(dataContainer, ["click", "submit"]);
+  }
 
   renderApp();
+
+  // Khởi động load dữ liệu cho Exercise 3
+  loadData();
 })();
