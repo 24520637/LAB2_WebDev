@@ -8,11 +8,16 @@
  * Request IDs, AbortController, and disposal are coordination metadata.
  */
 
+const lifecycleModule =
+  typeof require === "function"
+    ? require("./lifecycle-state.js")
+    : (globalThis.LifecycleStateMachine || {});
+
 const {
   LifecycleState,
   LifecycleEvent,
   transitionState
-} = require("./lifecycle-state.js");
+} = lifecycleModule;
 
 const DEFAULT_ERROR_MESSAGE =
   "Unable to load data. Please try again.";

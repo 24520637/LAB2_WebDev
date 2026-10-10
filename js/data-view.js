@@ -1,6 +1,11 @@
 "use strict";
 
-const { LifecycleState } = require("./lifecycle-state.js");
+const lifecycleModule =
+  typeof require === "function"
+    ? require("./lifecycle-state.js")
+    : (globalThis.LifecycleStateMachine || {});
+
+const { LifecycleState } = lifecycleModule;
 
 const EMPTY_DATA_MESSAGE = "No data available.";
 const DEFAULT_ERROR_MESSAGE = "Unable to load data. Please try again.";
