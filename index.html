@@ -7,11 +7,18 @@
   <title>MiniReact Todo App</title>
 </head>
 <body>
-  <main id="app" aria-busy="true">
-    <p>Loading Todo application...</p>
+  <main id="app">
+    <h1>MiniReact Todo App</h1>
+    <!-- Vùng chứa riêng cho loader và skeleton -->
+    <div id="data-container"></div>
   </main>
 
+  <link rel="stylesheet" href="css/skeleton.css">
+
   <script src="./js/mini-react.js" defer></script>
+  <script src="./js/lifecycle-state.js" defer></script>
+  <script src="./js/load-data.js" defer></script>
+  <script src="./js/data-view.js" defer></script>
   <script src="./js/app.js" defer></script>
 </body>
 </html>
