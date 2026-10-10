@@ -692,3 +692,339 @@ Exercise 2 is complete when:
 2. `feat(state): implement reactive useState dispatcher`
 3. `feat(events): attach root event delegation listener`
 4. `feat(ui): assemble reactive todo application`
+
+
+# Exercise 3: Resilient State Machine & Skeleton Loader
+
+## 1. Project Objective
+
+- [ ] Implement a resilient asynchronous data component using a finite state machine.
+- [ ] Eliminate race conditions and inconsistent UI states during asynchronous data operations.
+- [ ] Provide visual loading feedback through an animated skeleton screen.
+- [ ] Display a human-readable error message and a Retry Connection action when data loading fails.
+- [ ] Ensure that every asynchronous operation produces a predictable and valid UI state.
+
+### Engineering Constraints
+
+- [ ] Restrict the component lifecycle state to exactly four values: `IDLE`, `LOADING`, `SUCCESS`, and `ERROR`.
+- [ ] Keep lifecycle state separate from fetched data and error details.
+- [ ] Define explicit, deterministic state transitions.
+- [ ] Prevent stale asynchronous responses from overwriting newer results.
+- [ ] Ensure that retrying a failed operation does not create inconsistent UI states.
+- [ ] Render user-facing content through safe DOM APIs or VNodes.
+- [ ] Do not use `innerHTML`, `eval()`, or `new Function()` to render content.
+- [ ] Keep implementation tasks independently verifiable.
+- [ ] Run the relevant tests before marking acceptance criteria complete.
+
+---
+
+## 2. Work Breakdown Structure
+
+### EPIC 1: Lifecycle Contract and State Machine
+
+**Objective:** Define and implement the lifecycle contract before integrating asynchronous data operations.
+
+#### TASK 3.1: define_lifecycle_state_contract
+
+- [ ] Define the permitted lifecycle states: `IDLE`, `LOADING`, `SUCCESS`, and `ERROR`.
+- [ ] Define the initial state as `IDLE`.
+- [ ] Define the events that trigger lifecycle transitions:
+  - `LOAD`
+  - `RESOLVE`
+  - `REJECT`
+  - `RETRY`
+- [ ] Define the permitted transitions:
+  - `IDLE` → `LOADING`
+  - `LOADING` → `SUCCESS`
+  - `LOADING` → `ERROR`
+  - `ERROR` → `LOADING` through retry
+  - `SUCCESS` → `LOADING` when a new load is requested
+- [ ] Define how duplicate load requests and stale responses are handled.
+- [ ] Define the UI output expected for every lifecycle state.
+
+**Acceptance Criteria:**
+
+- [ ] The lifecycle contract documents all four permitted states.
+- [ ] Every supported event has a defined transition or rejection rule.
+- [ ] No additional lifecycle state is introduced.
+- [ ] Invalid transitions do not produce inconsistent UI output.
+- [ ] The contract is documented before implementation begins.
+
+#### TASK 3.2: implement_deterministic_state_machine
+
+- [ ] Create a centralized lifecycle state transition function.
+- [ ] Validate requested transitions against the lifecycle contract.
+- [ ] Ensure that each accepted transition updates the state deterministically.
+- [ ] Prevent unrelated rendering logic from assigning arbitrary lifecycle states.
+- [ ] Trigger UI rendering after an accepted state transition.
+- [ ] Keep data values and error details separate from lifecycle state.
+
+**Acceptance Criteria:**
+
+- [ ] The lifecycle state is always one of `IDLE`, `LOADING`, `SUCCESS`, or `ERROR`.
+- [ ] State transitions follow the documented contract.
+- [ ] Invalid transitions are handled predictably.
+- [ ] State updates do not create contradictory loading, success, and error feedback.
+- [ ] Unit tests cover valid and invalid transitions.
+
+---
+
+### EPIC 2: Asynchronous Data Lifecycle
+
+**Objective:** Implement the data-loading workflow and protect the UI from race conditions.
+
+#### TASK 3.3: implement_async_data_loader
+
+- [ ] Implement a single asynchronous data-loading function.
+- [ ] Transition the component to `LOADING` before starting the request.
+- [ ] Await the asynchronous data operation.
+- [ ] Transition to `SUCCESS` when the current request resolves successfully.
+- [ ] Store the returned data separately from the lifecycle state.
+- [ ] Transition to `ERROR` when the current request fails.
+- [ ] Store a safe, human-readable error message for presentation.
+- [ ] Ensure every request settles into an appropriate state without leaving the component indefinitely loading after a handled failure.
+
+**Acceptance Criteria:**
+
+- [ ] Starting a load displays the loading state.
+- [ ] Successful requests display the returned data.
+- [ ] Failed requests display the error state.
+- [ ] Data is not rendered as successful content before the request resolves.
+- [ ] A handled failure does not leave the component permanently in `LOADING`.
+- [ ] Tests cover successful and rejected promises.
+
+#### TASK 3.4: prevent_stale_async_responses
+
+- [ ] Assign a monotonically increasing request identifier to each load attempt.
+- [ ] Record the identifier of the latest request.
+- [ ] Check the request identifier before committing returned data.
+- [ ] Ignore results from requests that are no longer current.
+- [ ] Prevent stale failures from replacing the state of a newer successful request.
+- [ ] If cancellation is supported, cancel superseded requests where appropriate.
+- [ ] Keep request cancellation separate from the four permitted lifecycle states.
+
+**Acceptance Criteria:**
+
+- [ ] Older responses cannot overwrite data from a newer request.
+- [ ] Older errors cannot replace the current request's UI state.
+- [ ] Out-of-order request completion is handled deterministically.
+- [ ] Repeated load and retry operations do not create inconsistent UI states.
+- [ ] Tests explicitly simulate out-of-order promise resolution and rejection.
+
+#### TASK 3.5: handle_duplicate_requests_and_cleanup
+
+- [ ] Define whether repeated requests while `LOADING` are ignored, deduplicated, or superseded.
+- [ ] Apply the chosen policy consistently.
+- [ ] Prevent duplicate event handling from starting unintended concurrent requests.
+- [ ] Clean up request-related resources when applicable.
+- [ ] Ensure obsolete operations cannot update an unmounted or replaced component.
+- [ ] Handle cancellation and cleanup without introducing additional lifecycle states.
+
+**Acceptance Criteria:**
+
+- [ ] Repeated user actions follow the documented request policy.
+- [ ] No unintended duplicate request is started.
+- [ ] Obsolete operations cannot mutate the current UI.
+- [ ] Cleanup does not leave stale listeners or unresolved UI feedback.
+- [ ] Tests cover repeated requests, cancellation, and cleanup where supported.
+
+---
+
+### EPIC 3: Skeleton Loading and State-Driven UI
+
+**Objective:** Provide an accessible visual representation for each lifecycle state.
+
+#### TASK 3.6: implement_loading_skeleton
+
+- [ ] Create semantic skeleton placeholder elements for the loading view.
+- [ ] Render the skeleton only when the lifecycle state is `LOADING`.
+- [ ] Add CSS animation that produces a pulsing placeholder effect.
+- [ ] Use CSS classes or design tokens to control skeleton appearance.
+- [ ] Reserve suitable space for expected content to reduce layout shifts.
+- [ ] Respect `prefers-reduced-motion` by reducing or disabling the animation.
+- [ ] Provide an accessible loading announcement without exposing decorative skeleton elements as meaningful content.
+
+**Acceptance Criteria:**
+
+- [ ] The skeleton appears when a request enters `LOADING`.
+- [ ] The skeleton disappears when the state changes to `SUCCESS` or `ERROR`.
+- [ ] The animation is visible under normal motion settings.
+- [ ] Reduced-motion preferences are respected.
+- [ ] Decorative placeholders do not create confusing screen-reader output.
+- [ ] Skeleton styling does not introduce horizontal overflow at narrow viewport widths.
+
+#### TASK 3.7: implement_success_data_view
+
+- [ ] Render the successful data view only when the state is `SUCCESS`.
+- [ ] Display the data returned by the current successful request.
+- [ ] Provide an appropriate empty-data message when the successful result contains no records.
+- [ ] Render fetched text through safe text APIs or VNode text children.
+- [ ] Ensure the success view replaces the loading skeleton and previous error feedback.
+
+**Acceptance Criteria:**
+
+- [ ] Successful data is displayed only in the `SUCCESS` state.
+- [ ] Empty results are distinguishable from request failures.
+- [ ] Data from stale requests is not displayed.
+- [ ] HTML-like text is displayed as text rather than interpreted as markup.
+- [ ] The success view remains consistent after repeated loads.
+
+#### TASK 3.8: implement_error_boundary_and_retry_ui
+
+- [ ] Render a human-readable error message when the lifecycle state is `ERROR`.
+- [ ] Provide a `Retry Connection` button in the error view.
+- [ ] Connect the retry button to the existing asynchronous data-loading function.
+- [ ] Transition from `ERROR` to `LOADING` when retry begins.
+- [ ] Remove stale error feedback when a new attempt starts.
+- [ ] Prevent repeated retry activation from creating unintended concurrent requests.
+- [ ] Ensure that an unsuccessful retry returns the component to `ERROR`.
+
+**Acceptance Criteria:**
+
+- [ ] A failed request displays understandable error feedback.
+- [ ] The `Retry Connection` button has an accessible name.
+- [ ] Activating retry starts a new request.
+- [ ] The loading skeleton is displayed during retry.
+- [ ] A successful retry displays the latest data.
+- [ ] A failed retry displays the error message and retry action again.
+- [ ] Retry behavior is verified using both successful and failing test scenarios.
+
+#### TASK 3.9: integrate_state_driven_rendering
+
+- [ ] Connect the lifecycle state machine to the component rendering function.
+- [ ] Define one explicit rendering branch for each permitted lifecycle state.
+- [ ] Ensure only the view associated with the current state is displayed.
+- [ ] Remove obsolete state-specific UI when a transition occurs.
+- [ ] Keep event handlers compatible with the existing rendering and event-delegation architecture.
+- [ ] Avoid registering duplicate event listeners during rerenders.
+
+**Acceptance Criteria:**
+
+- [ ] `IDLE` displays the defined initial view.
+- [ ] `LOADING` displays the animated skeleton.
+- [ ] `SUCCESS` displays the current successful result.
+- [ ] `ERROR` displays the error message and retry action.
+- [ ] Repeated transitions do not create duplicate event listeners.
+- [ ] UI output is consistent with the lifecycle state after every render.
+
+---
+
+### EPIC 4: Integration, Regression Testing, and Delivery
+
+**Objective:** Verify lifecycle correctness, asynchronous resilience, accessibility, and the final deliverable.
+
+#### TASK 3.10: test_lifecycle_transition_matrix
+
+- [ ] Create unit tests for every permitted lifecycle transition.
+- [ ] Test the initial `IDLE` state.
+- [ ] Test `IDLE` → `LOADING` → `SUCCESS`.
+- [ ] Test `IDLE` → `LOADING` → `ERROR`.
+- [ ] Test `ERROR` → `LOADING` → `SUCCESS` through retry.
+- [ ] Test `ERROR` → `LOADING` → `ERROR` after a failed retry.
+- [ ] Test `SUCCESS` → `LOADING` when refreshing data.
+- [ ] Test invalid transitions and duplicate events.
+
+**Acceptance Criteria:**
+
+- [ ] All documented valid transitions pass.
+- [ ] Invalid transitions are handled according to the contract.
+- [ ] No test observes an unsupported lifecycle state.
+- [ ] Repeated transitions do not leave contradictory UI output.
+- [ ] Test results are recorded before integration is considered complete.
+
+#### TASK 3.11: test_async_race_conditions
+
+- [ ] Use controllable promises to simulate delayed requests.
+- [ ] Start multiple requests according to the documented request policy.
+- [ ] Resolve requests in a different order from which they were started.
+- [ ] Reject an older request after a newer request succeeds.
+- [ ] Verify that only the current request can update the UI.
+- [ ] Test retry while a previous request is still pending.
+- [ ] Verify cleanup behavior for obsolete or cancelled operations.
+
+**Acceptance Criteria:**
+
+- [ ] Stale responses never overwrite current data.
+- [ ] Stale errors never replace the current lifecycle state.
+- [ ] Retry operations follow the same race-prevention contract.
+- [ ] Tests are deterministic and do not depend on arbitrary real-time delays.
+- [ ] All race-condition assertions pass.
+
+#### TASK 3.12: audit_accessibility_and_rendering_safety
+
+- [ ] Verify keyboard access to the retry control.
+- [ ] Verify visible focus indicators.
+- [ ] Check accessible names and status announcements.
+- [ ] Verify skeleton content is appropriately hidden from assistive technology when decorative.
+- [ ] Check color contrast for normal text and interactive controls.
+- [ ] Test task or data text containing `<script>` and `<img>`-like strings.
+- [ ] Confirm that no rendering path uses `innerHTML`, `eval()`, or `new Function()`.
+- [ ] Inspect the browser console for unexpected errors.
+
+**Acceptance Criteria:**
+
+- [ ] All interactive controls are keyboard accessible.
+- [ ] Focus indicators are visible.
+- [ ] Loading and error feedback are understandable to assistive technology.
+- [ ] Untrusted text is rendered safely.
+- [ ] No unexpected browser errors occur during lifecycle transitions.
+- [ ] Accessibility findings are reviewed and relevant issues are resolved.
+
+#### TASK 3.13: verify_integration_and_regression
+
+- [ ] Run the existing VNode creation and DOM rendering tests.
+- [ ] Run the state management and event-delegation tests.
+- [ ] Run the lifecycle transition tests.
+- [ ] Run asynchronous race-condition tests.
+- [ ] Verify the skeleton, success, error, and retry views in the browser.
+- [ ] Review the final code changes for unrelated files and temporary debugging code.
+- [ ] Record test outcomes and unresolved limitations.
+
+**Acceptance Criteria:**
+
+- [ ] Existing functionality continues to work.
+- [ ] All required lifecycle and asynchronous tests pass.
+- [ ] The UI remains consistent after repeated loading and retry operations.
+- [ ] No unrelated changes are included in the deliverable.
+- [ ] Test outcomes are recorded accurately.
+- [ ] No acceptance criterion is marked complete without verification.
+
+#### TASK 3.14: commit_resilient_state_machine
+
+- [ ] Stage only the files required for the resilient data component.
+- [ ] Review the staged diff.
+- [ ] Confirm that lifecycle state is restricted to the four permitted values.
+- [ ] Confirm that skeleton feedback, error handling, retry, and race prevention are implemented.
+- [ ] Confirm that required tests have been run and their results recorded.
+- [ ] Create the milestone commit using the exact required message.
+
+**Acceptance Criteria:**
+
+- [ ] The component implements `IDLE`, `LOADING`, `SUCCESS`, and `ERROR`.
+- [ ] Asynchronous requests cannot overwrite current state with stale results.
+- [ ] The loading skeleton is animated and accessible.
+- [ ] The error view includes a working `Retry Connection` button.
+- [ ] Lifecycle, race-condition, security, and regression tests have been reviewed.
+- [ ] Only relevant files are included in the commit.
+- [ ] The Git commit message matches the mandated message exactly.
+
+---
+
+## 3. Definition of Done
+
+- [ ] The lifecycle state machine follows the documented transition contract.
+- [ ] The component has exactly four permitted lifecycle states.
+- [ ] Loading, success, error, and retry views are integrated.
+- [ ] The skeleton animation respects reduced-motion preferences.
+- [ ] Stale asynchronous responses cannot overwrite newer results.
+- [ ] Retry operations produce predictable state transitions.
+- [ ] Rendering is safe for untrusted text.
+- [ ] Accessibility and regression checks have been performed.
+- [ ] Required test results have been recorded.
+- [ ] The milestone commit has been created with the exact required message.
+
+---
+
+## 4. Required Git Milestone Commit
+
+`feat(ui): implement multi-state data component with skeleton feedback`
