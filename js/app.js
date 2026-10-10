@@ -1,4 +1,3 @@
-
 "use strict";
 
 (() => {
@@ -11,6 +10,11 @@
     setupEventDelegation
   } = window.MiniReact;
 
+  // Lấy các module loader và data view từ window (nếu dùng IIFE / Global scripts)
+  // Hoặc dùng window.AsyncDataLoader / window.DataView tùy theo cách bạn export ở các file kia
+  const { createDataLoader } = window.AsyncDataLoader || {};
+  const { renderDataView } = window.DataView || {};
+
   const root = document.getElementById("app");
 
   if (!root) {
@@ -19,13 +23,10 @@
 
   let nextTaskId = 1;
 
-  // TASK 2.12: Reactive Todo operations
   function TodoApp() {
     const [tasks, setTasks] = useState([]);
     const [filter, setFilter] = useState("ALL");
 
-    // Add a task using the delegated form submit event.
-    // Clicking Add Task and pressing Enter both submit this form.
     function handleSubmit(event) {
       event.preventDefault();
 
@@ -34,8 +35,6 @@
       if (!input) return;
 
       const text = input.value.trim();
-
-      // Reject empty or whitespace-only task names.
       if (!text) {
         input.focus();
         return;
@@ -47,9 +46,7 @@
         completed: false
       };
 
-      // Clear before the synchronous rerender replaces the DOM.
       input.value = "";
-
       setTasks(previousTasks => [...previousTasks, newTask]);
     }
 
@@ -139,7 +136,7 @@
         )
       ),
 
-      // Task list
+      // Task list container (Dùng vùng chứa riêng cho dữ liệu nếu muốn kết hợp loader)
       createElement(
         "section",
         { "aria-labelledby": "task-list-title" },
@@ -197,7 +194,6 @@
     );
   }
 
-  // Register the application render function.
   setRenderApp(() => {
     const appVNode = TodoApp();
     const appDOM = renderToDOM(appVNode);
@@ -206,9 +202,7 @@
     root.removeAttribute("aria-busy");
   });
 
-  // TASK 2.13: install delegated events once at the root.
   setupEventDelegation(root, ["click", "input", "submit"]);
 
-  // Initial render.
   renderApp();
 })();

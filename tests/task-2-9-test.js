@@ -50,7 +50,7 @@ global.document = {
 };
 
 // 2. Import MiniReact sau khi đã khởi tạo global.document
-const MiniReact = require("./mini-react.js");
+const MiniReact = require("../js/mini-react.js");
 
 test("TASK 2.8 & 2.9: Root Event Delegation", () => {
   const mockRoot = createMockElement("div");

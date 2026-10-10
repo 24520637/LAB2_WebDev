@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 const { test } = require("node:test");
 
 // Example assumes createTextElement is exported from mini-react.js.
-const { createTextElement } = require("./mini-react.js");
+const { createTextElement } = require("../js/mini-react.js");
 
 test("creates a VNode from a string", () => {
     assert.deepEqual(createTextElement("Hello"), {

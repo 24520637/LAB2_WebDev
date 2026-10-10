@@ -5,7 +5,7 @@ const { JSDOM } = require("jsdom");
 const {
   createElement,
   renderToDOM
-} = require("./mini-react.js");
+} = require("../js/mini-react.js");
 
 test("renders text safely", () => {
   const dom = new JSDOM("");

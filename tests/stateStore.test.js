@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { stateStore } = require("./mini-react.js");
+const { stateStore } = require("../js/mini-react.js");
 
 test("TASK 2.1: stateStore initializes as an array", () => {
   assert.ok(Array.isArray(stateStore));

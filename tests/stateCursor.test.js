@@ -8,7 +8,7 @@ const {
   resetCursor,
   nextHookIndex,
   getCursor
-} = require("./mini-react.js");
+} = require("../js/mini-react.js");
 
 test("Task 2.2: cursor starts at zero after reset", () => {
   resetCursor();

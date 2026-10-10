@@ -4,7 +4,7 @@ const { test } = require("node:test");
 const {
     createTextElement,
     createElement
-} = require("./mini-react.js");
+} = require("../js/mini-react.js");
 
 test("creates a heading VNode", () => {
     const heading = createElement("h1", {}, "Mini React");

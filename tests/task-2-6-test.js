@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const MiniReact = require("./mini-react.js");
+const MiniReact = require("../js/mini-react.js");
 
 test("TASK 2.6: Reactive Re-render cycle", () => {
   let renderCount = 0;
