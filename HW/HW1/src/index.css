@@ -1,0 +1,4 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; color: #1b1b1b; background: #fff; }
+main { max-width: 72rem; margin: 0 auto; padding: 1.5rem; }
+:focus-visible { outline: 3px solid #005fcc; outline-offset: 3px; }
