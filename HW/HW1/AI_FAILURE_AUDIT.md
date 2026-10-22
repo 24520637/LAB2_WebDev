@@ -19,3 +19,6 @@ Commit: feat: add sortable column support
 - **Detection:** Added ascending/descending regression coverage for positive and negative infinity alongside `NaN`, plus coverage for mixed number, string, and bigint values.
 - **Fix:** Compare numeric values with `<` and `>` instead of subtraction. Keep `null`, `undefined`, and `NaN` at the end in either direction; compare other value combinations by their string representation with a numeric-aware collator, preserving original order for ties.
 - **Status:** Fixed. All 9 focused sorting tests pass; `npm run build` passes; browser smoke testing verified ascending/descending row order, the active `aria-sort` state, and no sort button or ARIA sort state on the non-sortable column.
+
+
+

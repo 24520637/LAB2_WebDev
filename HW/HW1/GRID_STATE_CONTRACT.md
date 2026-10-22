@@ -30,4 +30,4 @@ Planning document only. No Data Grid behavior is implemented in this task.
 
 - The copied requirement `Zero div-soup: Must use native...` is incomplete; the required native HTML tags are unknown. Do not guess them.
 - Confirm page size, row identity, selection persistence, and keyboard focus/activation model before implementing those features.
-- No WCAG 2.2 AA or Lighthouse score is claimed by this planning document.
+- No WCAG 2.2 AA or Lighthouse score is claimed by this planning document..

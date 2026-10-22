@@ -1,38 +1,48 @@
 
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-
 import type { DataGridProps } from '../data-grid.types';
 import { filterRows } from '../filter-rows';
-import { nextSort, sortRows } from '../sort-rows';
-import type { SortState } from '../sort-rows';
+import { paginateRows } from '../paginate-rows';
 
+/** Grid foundation with filtering and pagination. */
 export function DataGrid<T>({
   data,
   columns,
   ariaLabel,
 }: DataGridProps<T>) {
   const [query, setQuery] = useState('');
-  const [sort, setSort] = useState<SortState<T>>(null);
-
+  const [requestedPage, setRequestedPage] = useState(1);
   const inputId = useId();
 
-  // Keep sorting restricted to explicitly sortable columns.
-  const activeSort =
-    sort &&
-    columns.some(
-      (column) =>
-        column.sortable === true &&
-        column.accessorKey === sort.key
-    )
-      ? sort
-      : null;
+  // Step 1: Apply existing filtering.
+  const filteredRows = useMemo(
+    () => filterRows(data, columns, query),
+    [data, columns, query]
+  );
 
-  // Required operation order: filter first, then sort.
-  const visibleRows = useMemo(() => {
-    const filtered = filterRows(data, columns, query);
-    return sortRows(filtered, columns, activeSort);
-  }, [data, columns, query, activeSort]);
+  // Step 2: Paginate filtered records.
+  const pagination = useMemo(
+    () => paginateRows(filteredRows, requestedPage),
+    [filteredRows, requestedPage]
+  );
+
+  // Keep stored page valid when parent data shrinks.
+  useEffect(() => {
+    if (
+      requestedPage !== pagination.page &&
+      pagination.page !== 0
+    ) {
+      setRequestedPage(pagination.page);
+    }
+  }, [requestedPage, pagination.page]);
+
+  function changeFilter(value: string) {
+    setQuery(value);
+
+    // Filtering always returns to the first page.
+    setRequestedPage(1);
+  }
 
   if (columns.length === 0) {
     return (
@@ -44,7 +54,6 @@ export function DataGrid<T>({
 
   return (
     <>
-      {/* Accessible filtering controls */}
       <div className="grid-filter">
         <label htmlFor={inputId}>
           Filter {ariaLabel}
@@ -54,76 +63,45 @@ export function DataGrid<T>({
           id={inputId}
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) =>
+            changeFilter(event.target.value)
+          }
         />
 
         <button
           type="button"
           disabled={query.length === 0}
-          onClick={() => setQuery('')}
+          onClick={() => changeFilter('')}
         >
           Clear filter
         </button>
       </div>
 
-      {/* Announce the number of matching records */}
+      {/* Accessible record and page information */}
       <p role="status" aria-live="polite">
-        {visibleRows.length}{' '}
-        {visibleRows.length === 1 ? 'record' : 'records'} shown.
+        Showing {pagination.startRecord}–
+        {pagination.endRecord} of{' '}
+        {pagination.totalRecords} records. Page{' '}
+        {pagination.page} of {pagination.totalPages}.
       </p>
 
       <table role="grid" aria-label={ariaLabel}>
         <thead>
           <tr role="row">
-            {columns.map((column, index) => {
-              const direction =
-                activeSort?.key === column.accessorKey
-                  ? activeSort.direction
-                  : undefined;
-
-              return (
-                <th
-                  key={index}
-                  scope="col"
-                  role="columnheader"
-                  aria-sort={
-                    column.sortable === true
-                      ? direction ?? 'none'
-                      : undefined
-                  }
-                >
-                  {column.sortable === true ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSort((current) =>
-                          nextSort(current, column)
-                        )
-                      }
-                      aria-label={`Sort by ${column.header}, ${
-                        direction === 'ascending'
-                          ? 'descending'
-                          : 'ascending'
-                      }`}
-                    >
-                      {column.header}
-                      {direction === 'ascending'
-                        ? ' ▲'
-                        : direction === 'descending'
-                          ? ' ▼'
-                          : ''}
-                    </button>
-                  ) : (
-                    column.header
-                  )}
-                </th>
-              );
-            })}
+            {columns.map((column, index) => (
+              <th
+                key={index}
+                scope="col"
+                role="columnheader"
+              >
+                {column.header}
+              </th>
+            ))}
           </tr>
         </thead>
 
         <tbody>
-          {visibleRows.length === 0 ? (
+          {pagination.rows.length === 0 ? (
             <tr role="row">
               <td
                 role="gridcell"
@@ -135,7 +113,7 @@ export function DataGrid<T>({
               </td>
             </tr>
           ) : (
-            visibleRows.map((record, rowIndex) => (
+            pagination.rows.map((record, rowIndex) => (
               <tr key={rowIndex} role="row">
                 {columns.map((column, columnIndex) => {
                   const value = record[column.accessorKey];
@@ -157,6 +135,46 @@ export function DataGrid<T>({
           )}
         </tbody>
       </table>
+
+      {/* Pagination navigation */}
+      <nav
+        className="grid-pagination"
+        aria-label={`${ariaLabel} pagination`}
+      >
+        <button
+          type="button"
+          disabled={pagination.page <= 1}
+          onClick={() =>
+            setRequestedPage(
+              Math.max(1, pagination.page - 1)
+            )
+          }
+        >
+          Previous
+        </button>
+
+        <span>
+          Page {pagination.page} of {pagination.totalPages}
+        </span>
+
+        <button
+          type="button"
+          disabled={
+            pagination.page === 0 ||
+            pagination.page >= pagination.totalPages
+          }
+          onClick={() =>
+            setRequestedPage(
+              Math.min(
+                pagination.totalPages,
+                pagination.page + 1
+              )
+            )
+          }
+        >
+          Next
+        </button>
+      </nav>
     </>
   );
 }
