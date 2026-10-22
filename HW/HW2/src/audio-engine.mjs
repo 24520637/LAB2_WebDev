@@ -14,6 +14,7 @@ export class AudioPlaybackEngine {
     this.current = null;
     this.unlocked = false;
     this.disposed = false;
+    this.disposePromise = null;
   }
 
   /** Call directly from a click/key user gesture; do not call automatically on page load. */
@@ -88,8 +89,8 @@ export class AudioPlaybackEngine {
     return this.frequencyData;
   }
 
-  async dispose() {
-    if (this.disposed) return;
+  dispose() {
+    if (this.disposePromise) return this.disposePromise;
     this.disposed = true;
     this.stop();
     if (this.analyser) {
@@ -98,7 +99,12 @@ export class AudioPlaybackEngine {
     }
     this.frequencyData = null;
     this.unlocked = false;
-    if (this.ownsContext && this.context && this.context.state !== 'closed') await this.context.close();
+    const context = this.context;
     this.context = null;
+    // Borrowed contexts are never closed; close owned contexts only on engine disposal.
+    this.disposePromise = Promise.resolve().then(async () => {
+      if (this.ownsContext && context && context.state !== 'closed') await context.close();
+    });
+    return this.disposePromise;
   }
 }

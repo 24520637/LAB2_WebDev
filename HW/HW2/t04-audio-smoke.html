@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Browser smoke test for the HW2 Web Audio playback engine."
+    />
+    <title>HW2 T-04 Audio Smoke Test</title>
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: system-ui, sans-serif;
+        color: #1b1b1b;
+        background: #f6f8fa;
+      }
+
+      body {
+        margin: 0;
+        padding: 2rem 1rem;
+      }
+
+      main {
+        max-width: 42rem;
+        margin: 0 auto;
+        padding: 1.5rem;
+        background: #fff;
+        border: 1px solid #767676;
+        border-radius: 0.5rem;
+      }
+
+      h1 {
+        margin-top: 0;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        margin-block: 1.5rem;
+      }
+
+      button {
+        min-height: 2.75rem;
+        padding: 0.6rem 1rem;
+        border: 1px solid #005fcc;
+        border-radius: 0.25rem;
+        color: #fff;
+        background: #005fcc;
+        font: inherit;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        color: #1b1b1b;
+        background: #f2f2f2;
+        border-color: #767676;
+      }
+
+      button:disabled {
+        color: #454545;
+        background: #e6e6e6;
+        border-color: #767676;
+        cursor: not-allowed;
+      }
+
+      :focus-visible {
+        outline: 3px solid #005fcc;
+        outline-offset: 3px;
+      }
+
+      #status {
+        min-height: 1.5em;
+        font-weight: 600;
+      }
+
+      #error:not(:empty) {
+        padding: 0.75rem;
+        border-left: 4px solid #b00020;
+        color: #710014;
+        background: #fff1f2;
+      }
+
+      code {
+        overflow-wrap: anywhere;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>HW2 T-04 Audio Smoke Test</h1>
+      <p>
+        This page generates a short 440 Hz WAV fixture in memory, decodes it
+        with the browser's <code>AudioContext</code>, and plays it through the
+        T-04 analyser graph. Turn your speakers or headphones on first.
+      </p>
+
+      <div class="controls">
+        <button id="play" type="button">Unlock audio and play test tone</button>
+        <button id="stop" class="secondary" type="button" disabled>
+          Stop
+        </button>
+      </div>
+
+      <p id="status" role="status" aria-live="polite">
+        Ready. Activate “Unlock audio and play test tone” to begin.
+      </p>
+      <p id="error" role="alert"></p>
+      <dl>
+        <dt>AudioContext state</dt>
+        <dd id="context-state">Not created</dd>
+        <dt>Analyser FFT size / frequency bins</dt>
+        <dd id="analyser-info">Not initialized</dd>
+        <dt>Live frequency sample</dt>
+        <dd id="sample" aria-live="off">No samples yet</dd>
+      </dl>
+
+      <p>
+        Pass criteria: the status reaches “Playing”, the live sample reports
+        non-zero energy within one analyser bin of 440 Hz, the tone is audible,
+        and natural completion returns the engine to idle.
+      </p>
+    </main>
+    <script type="module" src="./src/t04-audio-smoke.mjs"></script>
+  </body>
+</html>

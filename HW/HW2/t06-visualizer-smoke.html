@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>T-06 Canvas Visualizer Browser Check</title>
+  <style>
+    body { font: 1rem system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
+    button { padding: .7rem 1rem; margin: .4rem; }
+    button:focus-visible { outline: 3px solid #085bb5; outline-offset: 3px; }
+    canvas { display: block; width: 100%; height: 190px; background: #f2f4f8; border: 1px solid #888; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>T-06 Canvas visualizer smoke test</h1>
+    <p>Click Play to unlock Web Audio. Sound and bars should last about 3 seconds.</p>
+    <button id="play">Play tone</button>
+    <button id="stop">Stop</button>
+    <p id="status" role="status">Idle</p>
+    <canvas id="bars" aria-label="Audio frequency bars" role="img"></canvas>
+  </main>
+  <script type="module">
+    import { AudioPlaybackEngine } from './src/audio-engine.mjs';
+    import { CanvasAudioVisualizer } from './src/canvas-visualizer.mjs';
+    const status = document.querySelector('#status');
+    const engine = new AudioPlaybackEngine({onEnded: () => {
+      visualizer.stop(); status.textContent = 'Finished naturally';
+    }});
+    const visualizer = new CanvasAudioVisualizer(document.querySelector('#bars'), engine);
+    const resize = () => visualizer.resize();
+    window.addEventListener('resize', resize);
+    document.querySelector('#play').addEventListener('click', async () => {
+      try {
+        if (engine.current) {status.textContent = 'Already playing';return;}
+        await engine.unlock();
+        const ctx = engine.context;
+        const duration = 3;
+        const buffer = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
+        const samples = buffer.getChannelData(0);
+        for(let i = 0; i < samples.length; i++) samples[i] = 0.12 * Math.sin(2 * Math.PI * 440 * i / ctx.sampleRate);
+        await engine.play('demo', buffer);
+        status.textContent = 'Playing — frequency bins: ' + engine.frequencyData.length;
+        visualizer.start();
+      } catch (error) {status.textContent = 'Error: ' + error.message; console.error(error);}
+    });
+    document.querySelector('#stop').addEventListener('click', () => {
+      engine.stop(); visualizer.stop(); status.textContent = 'Stopped';
+    });
+    window.addEventListener('pagehide', () => {
+      visualizer.dispose(); window.removeEventListener('resize', resize); void engine.dispose();
+    }, {once: true});
+  </script>
+</body>
+</html>

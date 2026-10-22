@@ -23,13 +23,17 @@ export class PlaybackCoordinator {
         this._pump();
       },
     });
-    this.engine.onEnded = ({ id }) => this._naturalEnd(id);
+    // The engine is borrowed: the coordinator must not dispose or close its context.
+    this.previousOnEnded = this.engine.onEnded;
+    this.endedHandler = ({ id }) => this._naturalEnd(id);
+    this.engine.onEnded = this.endedHandler;
   }
 
   /** Invoke from a real click/key gesture; ready tracks wait until unlocked. */
   async unlock() {
+    if (this.disposed) throw new Error('Playback coordinator disposed');
     await this.engine.unlock();
-    this._pump();
+    if (!this.disposed) this._pump();
   }
 
   enqueue(track) { return this.queue.enqueue(track); }
@@ -68,7 +72,7 @@ export class PlaybackCoordinator {
     if (session.started) {
       this.engine.stop();
       if (this.current === session) this.current = null;
-      queueMicrotask(() => this._pump());
+      queueMicrotask(() => { if (!this.disposed) this._pump(); });
     }
   }
 
@@ -109,7 +113,8 @@ export class PlaybackCoordinator {
       if (session.ended || this.disposed || this.current !== session ||
           session.generation !== this.generation ||
           this.queue.snapshot(session.id)?.state !== 'playing') {
-        this.engine.stop();
+        // A late start after disposal must not stop another owner's playback.
+        if (!this.disposed || this.engine.current?.id === session.id) this.engine.stop();
         if (this.current === session) this.current = null;
         this._pump();
       }
@@ -131,12 +136,16 @@ export class PlaybackCoordinator {
     this.disposed = true;
     this.queue.dispose();
     if (this.current) {
-      this.current.ended = true;
-      this.engine.stop();
+      const session = this.current;
+      session.ended = true;
+      if (this.engine.current?.id === session.id) this.engine.stop();
       this.current = null;
     }
     this.buffers.clear();
     this.ready.length = 0;
-    this.engine.onEnded = () => {};
+    // Restore only our handler; never clobber a newer consumer's listener.
+    if (this.engine.onEnded === this.endedHandler) this.engine.onEnded = this.previousOnEnded;
+    this.previousOnEnded = null;
+    this.endedHandler = null;
   }
 }
