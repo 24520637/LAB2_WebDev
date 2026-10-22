@@ -1,0 +1,33 @@
+﻿COMMAND: node --test HW\HW3\scratch-ai-failure-experiments\late-checkout.test.mjs
+CAPTURED: 2026-10-23 00:34:57 +07:00
+✖ candidate checkout must reject now >= expiresAt before timeout delivery (3.8191ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 116.4497
+
+✖ failing tests:
+
+test at HW\HW3\scratch-ai-failure-experiments\late-checkout.test.mjs:5:1
+✖ candidate checkout must reject now >= expiresAt before timeout delivery (3.8191ms)
+  AssertionError [ERR_ASSERTION]: expected checkout rejection at 1050, got ok=true, status=CHECKED_OUT
+
+  true !== false
+
+      at TestContext.<anonymous> (file:///C:/Users/buing/OneDrive/Documents/WebDev/LAB2_WebDev/HW/HW3/scratch-ai-failure-experiments/late-checkout.test.mjs:17:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: true,
+    expected: false,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+EXIT_CODE=1

@@ -1,0 +1,32 @@
+﻿COMMAND: node --test HW\HW3\tests\countdown.test.mjs HW\HW3\tests\reservations.test.mjs
+CAPTURED: 2026-10-23 00:25:44 +07:00
+✔ derives every update from one fixed wall-clock target (15.5392ms)
+✔ a delayed frame past the deadline clamps at zero and completes only once (0.2712ms)
+✔ a single frame after a 60-second pause catches up to the fixed deadline (0.1611ms)
+✔ visibility refresh catches up to wall time and does not duplicate frames (0.2503ms)
+✔ zero duration updates and completes synchronously without scheduling RAF (0.1659ms)
+✔ restart replaces the previous run and leaves exactly one update loop (0.1968ms)
+✔ stop and dispose cancel pending work, remove listener and are idempotent (0.5625ms)
+✔ validates durations, callbacks and formatter input (0.5721ms)
+✔ callback failure stops the clock and does not leave a frame behind (0.4982ms)
+✔ creates unique reservation IDs and one fixed expiresAt deadline (2.9121ms)
+✔ late checkout lazily expires before the scheduled callback fires (0.7917ms)
+✔ repeated expire and cancel release reserved stock at most once (0.6418ms)
+✔ scheduled expiry returns stock once and leaves state unchanged if timer fires early (0.3662ms)
+✔ cancel before deadline refunds once; cancel at the boundary expires instead (0.3431ms)
+✔ checkout before deadline sells reserved stock exactly once (0.2781ms)
+✔ replayed idempotency key returns the same reservation without extending expiry (0.2091ms)
+✔ same-store competing buyers cannot reserve the last unit (1.3392ms)
+✔ concurrent duplicate request keys return one reservation and allocate once (0.3703ms)
+✔ coordinators sharing one store generate distinct IDs and request keys (0.3366ms)
+✔ first terminal action wins before expiry; deadline expiry takes precedence (0.3132ms)
+✔ rejects invalid TTL and removes pending expiry work on disposal (1.1929ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 131.7623
+EXIT_CODE=0

@@ -1,0 +1,33 @@
+﻿COMMAND: node --test HW\HW3\scratch-ai-failure-experiments\double-release.test.mjs
+CAPTURED: 2026-10-23 00:34:57 +07:00
+✖ candidate repeated terminal actions must preserve stock conservation (1.3338ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 101.2006
+
+✖ failing tests:
+
+test at HW\HW3\scratch-ai-failure-experiments\double-release.test.mjs:5:1
+✖ candidate repeated terminal actions must preserve stock conservation (1.3338ms)
+  AssertionError [ERR_ASSERTION]: expected available=1 after repeated terminal action, got 2
+
+  2 !== 1
+
+      at TestContext.<anonymous> (file:///C:/Users/buing/OneDrive/Documents/WebDev/LAB2_WebDev/HW/HW3/scratch-ai-failure-experiments/double-release.test.mjs:12:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1402:25)
+      at Test.start (node:internal/test_runner/test:1262:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:387:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+EXIT_CODE=1

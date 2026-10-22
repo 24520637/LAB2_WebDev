@@ -102,6 +102,24 @@ test('a delayed frame past the deadline clamps at zero and completes only once',
   assert.equal(f.frames.size, 0);
 });
 
+test('a single frame after a 60-second pause catches up to the fixed deadline', () => {
+  const f = fixture(10_000);
+  const updates = [];
+  let completions = 0;
+  f.clock.start(60_000, {
+    onUpdate: update => updates.push(update.remainingMs),
+    onComplete: () => { completions += 1; },
+  });
+
+  f.setTime(70_000);
+  f.frame();
+
+  assert.deepEqual(updates, [60_000, 0]);
+  assert.equal(completions, 1);
+  assert.equal(f.clock.running, false);
+  assert.equal(f.frames.size, 0);
+});
+
 test('visibility refresh catches up to wall time and does not duplicate frames', () => {
   const f = fixture();
   const updates = [];

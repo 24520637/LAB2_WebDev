@@ -77,6 +77,29 @@ test('late checkout lazily expires before the scheduled callback fires', () => {
   assert.equal(f.coordinator.checkout(created.reservation.id).code, 'already_terminal');
 });
 
+test('repeated expire and cancel release reserved stock at most once', () => {
+  const f = fixture({ stock: 1 });
+  const created = reserve(f);
+  const expiresAt = created.reservation.expiresAt;
+  f.setTime(expiresAt);
+
+  for (const action of [
+    () => f.coordinator.expire(created.reservation.id),
+    () => f.coordinator.expire(created.reservation.id),
+    () => f.coordinator.cancel(created.reservation.id),
+    () => f.coordinator.expire(created.reservation.id),
+  ]) {
+    action();
+    const { product } = f.coordinator.getSnapshot();
+    assert.equal(product.initialStock, product.available + product.reserved + product.sold);
+    assert.ok(product.available >= 0);
+    assert.ok(product.reserved >= 0);
+    assert.equal(product.available, 1);
+    assert.equal(product.reserved, 0);
+    assert.equal(product.sold, 0);
+  }
+});
+
 test('scheduled expiry returns stock once and leaves state unchanged if timer fires early', () => {
   const f = fixture({ stock: 1 });
   const created = reserve(f);
