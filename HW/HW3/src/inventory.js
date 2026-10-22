@@ -107,10 +107,13 @@ export function inventoryReducer(state, action) {
 
   switch (action.type) {
     case 'reserve': {
-      const { reservationId, requestKey, quantity } = action;
+      const { reservationId, requestKey, quantity, expiresAt } = action;
       assertIdentifier(reservationId, 'reservationId');
       assertIdentifier(requestKey, 'requestKey');
       assertQuantity(quantity);
+      if (expiresAt !== undefined && !Number.isFinite(expiresAt)) {
+        throw new RangeError('expiresAt must be a finite timestamp');
+      }
 
       if (Object.hasOwn(state.reservations, reservationId)) {
         return {
@@ -136,6 +139,7 @@ export function inventoryReducer(state, action) {
         requestKey,
         quantity,
         status: ACTIVE_RESERVATION,
+        ...(expiresAt === undefined ? {} : { expiresAt }),
       });
       const nextState = Object.freeze({
         ...state,
@@ -199,8 +203,8 @@ export class InventoryStore {
     });
   }
 
-  reserve({ reservationId, requestKey, quantity }) {
-    return this.#dispatch({ type: 'reserve', reservationId, requestKey, quantity });
+  reserve({ reservationId, requestKey, quantity, expiresAt }) {
+    return this.#dispatch({ type: 'reserve', reservationId, requestKey, quantity, expiresAt });
   }
 
   expire(reservationId) {
