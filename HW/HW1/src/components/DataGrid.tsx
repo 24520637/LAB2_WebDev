@@ -1,33 +1,35 @@
 
 import { useEffect, useId, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
+
 import type { DataGridProps } from '../data-grid.types';
 import { filterRows } from '../filter-rows';
 import { paginateRows } from '../paginate-rows';
 
-/** Grid foundation with filtering and pagination. */
 export function DataGrid<T>({
   data,
   columns,
   ariaLabel,
+  onRowSelect,
 }: DataGridProps<T>) {
   const [query, setQuery] = useState('');
   const [requestedPage, setRequestedPage] = useState(1);
+  const [selectedRecord, setSelectedRecord] = useState<T | null>(null);
+
   const inputId = useId();
 
-  // Step 1: Apply existing filtering.
+  // T-04.3: Filtering
   const filteredRows = useMemo(
     () => filterRows(data, columns, query),
     [data, columns, query]
   );
 
-  // Step 2: Paginate filtered records.
+  // T-04.4: Pagination
   const pagination = useMemo(
     () => paginateRows(filteredRows, requestedPage),
     [filteredRows, requestedPage]
   );
 
-  // Keep stored page valid when parent data shrinks.
   useEffect(() => {
     if (
       requestedPage !== pagination.page &&
@@ -39,9 +41,15 @@ export function DataGrid<T>({
 
   function changeFilter(value: string) {
     setQuery(value);
-
-    // Filtering always returns to the first page.
     setRequestedPage(1);
+  }
+
+  // T-05.1: Select exactly one record.
+  function selectRecord(record: T) {
+    setSelectedRecord(record);
+
+    // Optional callback: no exception if omitted.
+    onRowSelect?.(record);
   }
 
   if (columns.length === 0) {
@@ -77,7 +85,6 @@ export function DataGrid<T>({
         </button>
       </div>
 
-      {/* Accessible record and page information */}
       <p role="status" aria-live="polite">
         Showing {pagination.startRecord}–
         {pagination.endRecord} of{' '}
@@ -85,7 +92,11 @@ export function DataGrid<T>({
         {pagination.page} of {pagination.totalPages}.
       </p>
 
-      <table role="grid" aria-label={ariaLabel}>
+      <table
+        role="grid"
+        aria-label={ariaLabel}
+        aria-multiselectable="false"
+      >
         <thead>
           <tr role="row">
             {columns.map((column, index) => (
@@ -113,30 +124,64 @@ export function DataGrid<T>({
               </td>
             </tr>
           ) : (
-            pagination.rows.map((record, rowIndex) => (
-              <tr key={rowIndex} role="row">
-                {columns.map((column, columnIndex) => {
-                  const value = record[column.accessorKey];
+            pagination.rows.map((record, rowIndex) => {
+              // Reference identity, not page index.
+              const selected = selectedRecord === record;
 
-                  const display: ReactNode =
-                    value == null ? '—' : String(value);
+              return (
+                <tr
+                  key={rowIndex}
+                  role="row"
+                  aria-selected={selected}
+                  className={
+                    selected
+                      ? 'grid-row-selected'
+                      : undefined
+                  }
+                  onClick={() => selectRecord(record)}
+                >
+                  {columns.map((column, columnIndex) => {
+                    const value =
+                      record[column.accessorKey];
 
-                  return (
-                    <td
-                      key={columnIndex}
-                      role="gridcell"
-                    >
-                      {display}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))
+                    const display: ReactNode =
+                      value == null
+                        ? '—'
+                        : String(value);
+
+                    return (
+                      <td
+                        key={columnIndex}
+                        role="gridcell"
+                      >
+                        {columnIndex === 0 ? (
+                          <button
+                            type="button"
+                            className="grid-select-button"
+                            aria-label={`Select row ${
+                              pagination.startRecord + rowIndex
+                            }: ${String(value ?? 'empty')}`}
+                            onClick={(event) => {
+                              // Avoid double callback invocation.
+                              event.stopPropagation();
+                              selectRecord(record);
+                            }}
+                          >
+                            {display}
+                          </button>
+                        ) : (
+                          display
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
 
-      {/* Pagination navigation */}
       <nav
         className="grid-pagination"
         aria-label={`${ariaLabel} pagination`}

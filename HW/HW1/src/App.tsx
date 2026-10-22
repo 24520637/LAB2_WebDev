@@ -1,4 +1,5 @@
 
+import { useState } from 'react';
 import { DataGrid } from './components/DataGrid';
 import type { ColumnDef } from './data-grid.types';
 
@@ -28,10 +29,12 @@ const columns: ColumnDef<Employee>[] = [
 const employees: Employee[] = [
   { id: 2, name: 'Sam' },
   { id: 1, name: 'Alex', department: 'Operations' },
-  { id: 3, name: 'Alice', department: 'Sales' },
 ];
 
 export default function App() {
+  const [lastSelected, setLastSelected] =
+    useState<Employee | null>(null);
+
   return (
     <main>
       <h1>Enterprise Data Grid</h1>
@@ -40,7 +43,14 @@ export default function App() {
         data={employees}
         columns={columns}
         ariaLabel="Employee records"
+        onRowSelect={setLastSelected}
       />
+
+      <p role="status">
+        {lastSelected
+          ? `Selected employee: ${lastSelected.name}`
+          : 'No employee selected.'}
+      </p>
     </main>
   );
 }

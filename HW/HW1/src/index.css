@@ -74,3 +74,25 @@ main { max-width: 72rem; margin: 0 auto; padding: 1.5rem; }
   outline: 3px solid #005fcc;
   outline-offset: 3px;
 }
+
+
+/* T-05.1: Single-row selection */
+
+.grid-row-selected {
+  background: #dbeafe;
+}
+
+.grid-select-button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0.25rem;
+}
+
+.grid-select-button:focus-visible {
+  outline: 3px solid #005fcc;
+  outline-offset: 2px;
+}
