@@ -28,6 +28,7 @@ const columns: ColumnDef<Employee>[] = [
 const employees: Employee[] = [
   { id: 2, name: 'Sam' },
   { id: 1, name: 'Alex', department: 'Operations' },
+  { id: 3, name: 'Alice', department: 'Sales' },
 ];
 
 export default function App() {

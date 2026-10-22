@@ -2,3 +2,49 @@
 body { margin: 0; font-family: system-ui, sans-serif; color: #1b1b1b; background: #fff; }
 main { max-width: 72rem; margin: 0 auto; padding: 1.5rem; }
 :focus-visible { outline: 3px solid #005fcc; outline-offset: 3px; }
+
+
+/* T-04.3: Filtering controls */
+
+.grid-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.grid-filter label {
+  font-weight: 600;
+}
+
+.grid-filter input {
+  padding: 0.6rem;
+  min-width: 12rem;
+  border: 1px solid #777;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.grid-filter button {
+  padding: 0.6rem 1rem;
+  font: inherit;
+  color: #fff;
+  background: #005fcc;
+  border: 1px solid #005fcc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.grid-filter button:disabled {
+  color: #444;
+  background: #ddd;
+  border-color: #aaa;
+  cursor: not-allowed;
+}
+
+.grid-filter input:focus-visible,
+.grid-filter button:focus-visible {
+  outline: 3px solid #005fcc;
+  outline-offset: 3px;
+}
