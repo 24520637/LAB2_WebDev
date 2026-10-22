@@ -46,7 +46,7 @@ export default function App() {
         onRowSelect={setLastSelected}
       />
 
-      <p role="status">
+      <p>
         {lastSelected
           ? `Selected employee: ${lastSelected.name}`
           : 'No employee selected.'}

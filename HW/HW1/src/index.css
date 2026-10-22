@@ -96,3 +96,117 @@ main { max-width: 72rem; margin: 0 auto; padding: 1.5rem; }
   outline: 3px solid #005fcc;
   outline-offset: 2px;
 }
+
+
+/* T-05.2–T-05.3: Visible keyboard cell focus */
+
+table[role='grid'] td[role='gridcell']:focus-visible {
+  outline: 3px solid #005fcc;
+  outline-offset: -3px;
+  position: relative;
+}
+
+/* T-06.2: Accessible focus and contrast */
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  max-width: 100%;
+}
+
+main {
+  min-width: 0;
+}
+
+/* T-06.3: Contained horizontal scrolling */
+.grid-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.grid-scroll:focus-visible {
+  outline: 3px solid #005fcc;
+  outline-offset: -3px;
+}
+
+/* Preserve native table structure */
+table[role='grid'] {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+}
+
+table[role='grid'] th,
+table[role='grid'] td {
+  padding: 0.75rem;
+  border: 1px solid #767676;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+table[role='grid'] th {
+  background: #eeeeee;
+  color: #1b1b1b;
+}
+
+table[role='grid'] td {
+  background: #ffffff;
+  color: #1b1b1b;
+}
+
+/* Selected rows remain visually distinct */
+table[role='grid'] tr[aria-selected='true'] td {
+  background: #dbeafe;
+}
+
+/* Pagination controls */
+.grid-pagination button {
+  color: #1b1b1b;
+  background: #f2f2f2;
+  border: 1px solid #767676;
+  border-radius: 4px;
+}
+
+.grid-pagination button:disabled {
+  color: #454545;
+  background: #e6e6e6;
+}
+
+/* Empty announcements should not take up space */
+.grid-selection-status:empty {
+  display: none;
+}
+
+/* Responsive filter controls */
+.grid-filter input {
+  max-width: 100%;
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.grid-filter button {
+  flex: 0 0 auto;
+}
+
+/* T-06.3: Mobile 375px */
+@media (max-width: 375px) {
+  main {
+    padding: 0.75rem;
+  }
+
+  .grid-filter {
+    align-items: stretch;
+  }
+
+  .grid-filter label {
+    flex-basis: 100%;
+  }
+
+  .grid-pagination {
+    justify-content: space-between;
+  }
+}
