@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "npm --prefix HW/HW1 run dev",
+    "dev:hw2-smoke": "npm --prefix HW/HW1 run dev -- ../HW2",
     "build": "npm --prefix HW/HW1 run build",
     "test": "npm --prefix HW/HW1 test",
     "typecheck": "npm --prefix HW/HW1 run typecheck"

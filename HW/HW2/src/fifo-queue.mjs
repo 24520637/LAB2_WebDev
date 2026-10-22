@@ -80,8 +80,34 @@ export class FIFOQueue {
     return { ok: true };
   }
 
-  /** T-05 will own skip/playback; never reinterpret it as cancellation here. */
-  skip() { return { ok: false, code: 'nothing_playing' }; }
+  /** Begin playback only for a ready task; the playback coordinator owns the source. */
+  beginPlayback(id) {
+    const task = this.tasks.get(id);
+    if (!task) return { ok: false, code: 'not_found' };
+    if (task.state !== 'ready') return { ok: false, code: 'not_ready' };
+    if ([...this.tasks.values()].some(other => other.state === 'playing')) {
+      return { ok: false, code: 'already_playing' };
+    }
+    this._transition(task, 'playing');
+    return { ok: true, task: this.snapshot(id) };
+  }
+
+  /** One-shot terminal transition for the current playback session. */
+  finishPlayback(id, outcome, detail = {}) {
+    if (!['completed', 'skipped', 'failed'].includes(outcome)) {
+      return { ok: false, code: 'invalid_outcome' };
+    }
+    const task = this.tasks.get(id);
+    if (!task) return { ok: false, code: 'not_found' };
+    if (task.state !== 'playing') return { ok: false, code: 'not_playing' };
+    this._transition(task, outcome, detail);
+    return { ok: true };
+  }
+
+  skip() {
+    const task = [...this.tasks.values()].find(t => t.state === 'playing');
+    return task ? this.finishPlayback(task.id, 'skipped') : { ok: false, code: 'nothing_playing' };
+  }
 
   _schedule() {
     if (this.draining || this.disposed || this.pending.length === 0) return;

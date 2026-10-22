@@ -43,12 +43,28 @@ Build an ordered audio loading/decoding queue with controlled concurrency, Web A
 - **Verify:** `node --test tests/*.test.mjs` from `HW/HW2`; tests cover mocked fetch response, abort, HTTP 404, network rejection, decode failure, late decode completion, serialized worker behavior, and decoded-buffer handoff. Playback-time release remains covered by T-04/T-05.
 
 **T-04 — Build Web Audio playback graph**
+- **Status:** `src/audio-engine.mjs` and mocked engine tests exist. A browser
+  smoke-test page is available at `t04-audio-smoke.html`; it generates and
+  decodes a short 440 Hz WAV fixture in memory and plays it through the real
+  Web Audio graph after a user gesture. Browser smoke verification on
+  2026-10-22 confirmed the context entered `running`, FFT was 256 with 128
+  bins, the analyser returned non-zero energy within one bin of 440 Hz,
+  natural `onended` updated the UI, and Stop reset the UI. Listening remains
+  a manual check because the automated browser output cannot be physically
+  heard or verified here.
 - **Objective:** Play decoded buffers and provide frequency samples.
 - **Scope:** Create/reuse an `AudioContext` after permitted user interaction; connect `AudioBufferSourceNode → AnalyserNode → destination`; set `fftSize` to **256 or 512** (choose 256 initially), create `Uint8Array(analyser.frequencyBinCount)`, call `getByteFrequencyData()`. Handle suspended context and autoplay rules.
 - **Dependencies:** T-03.
 - **Files likely affected:** **Proposed** audio engine, engine tests.
 - **Acceptance:** A fresh source is created per play; audible output is routed correctly; array length matches `frequencyBinCount`; `ended` fires once logically; playback failure does not strand queue.
-- **Verify:** **Proposed tests:** fake Web Audio nodes/context; **manual browser check:** play a short local/served permitted audio fixture, inspect audio and analyser values.
+- **Verify:** `node --test tests/audio-engine.test.mjs` for mocked graph tests.
+  For a real-browser check, run `npm run dev:hw2-smoke` from the repository
+  root and open
+  `t04-audio-smoke.html`; activate “Unlock audio and play test tone”, verify
+  the context is running, confirm the live analyser peak is non-zero within
+  one 256-point FFT bin of 440 Hz, listen for the tone, and verify natural
+  completion or Stop returns the UI to idle. The generated fixture is
+  synthesized locally in memory; no audio file or external asset is required.
 
 **T-05 — Handle completion, skip and cancellation**
 - **Objective:** Make rapid controls deterministic and safe.
