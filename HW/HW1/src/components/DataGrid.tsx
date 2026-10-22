@@ -9,8 +9,11 @@ import {
 import type { KeyboardEvent, ReactNode } from 'react';
 
 import type { DataGridProps } from '../data-grid.types';
+import type { ColumnDef } from '../data-grid.types';
 import { filterRows } from '../filter-rows';
 import { paginateRows } from '../paginate-rows';
+import { nextSort, sortRows } from '../sort-rows';
+import type { SortState } from '../sort-rows';
 
 type CellPosition = {
   row: number;
@@ -25,6 +28,7 @@ export function DataGrid<T>({
 }: DataGridProps<T>) {
   const [query, setQuery] = useState('');
   const [requestedPage, setRequestedPage] = useState(1);
+  const [sort, setSort] = useState<SortState<T>>(null);
   const [selectedRecord, setSelectedRecord] = useState<T | null>(null);
   const [selectionAnnouncement, setSelectionAnnouncement] = useState('');
 
@@ -33,8 +37,7 @@ export function DataGrid<T>({
     useState<CellPosition>({ row: 0, column: 0 });
 
   const inputId = useId();
-  const headerId = (index: number) =>
-  `${inputId}-column-${index}`;
+  const headerId = (index: number) => `${inputId}-column-${index}`;
   const filterRef = useRef<HTMLInputElement>(null);
   const gridRef = useRef<HTMLTableElement>(null);
   const keyboardFocusInside = useRef(false);
@@ -47,9 +50,14 @@ export function DataGrid<T>({
     [data, columns, query]
   );
 
+  const sortedRows = useMemo(
+    () => sortRows(filteredRows, columns, sort),
+    [filteredRows, columns, sort]
+  );
+
   const pagination = useMemo(
-    () => paginateRows(filteredRows, requestedPage),
-    [filteredRows, requestedPage]
+    () => paginateRows(sortedRows, requestedPage),
+    [sortedRows, requestedPage]
   );
 
   // T-05.3: Recover focus when focused data disappears.
@@ -91,21 +99,27 @@ export function DataGrid<T>({
     );
   }
 
-  
-function selectRecord(record: T) {
-  setSelectedRecord(record);
+  function selectRecord(record: T) {
+    setSelectedRecord(record);
 
-  const label = columns
-    .map((column) =>
-      String(record[column.accessorKey] ?? '—')
-    )
-    .join(', ');
+    const label = columns
+      .map((column) =>
+        String(record[column.accessorKey] ?? '—')
+      )
+      .join(', ');
 
-  setSelectionAnnouncement(`Selected row: ${label}`);
+    setSelectionAnnouncement(`Selected row: ${label}`);
 
-  onRowSelect?.(record);
-}
+    onRowSelect?.(record);
+  }
 
+  function changeSort(column: ColumnDef<T>) {
+    const next = nextSort(sort, column);
+    if (next === sort) return;
+
+    setSort(next);
+    setRequestedPage(1);
+  }
 
   // T-05.2: Arrow navigation and keyboard selection.
   function handleCellKeyDown(
@@ -202,153 +216,176 @@ function selectRecord(record: T) {
         </button>
       </div>
 
-      <p role="status">
+      <p role="status" aria-live="polite">
         Showing {pagination.startRecord}–
         {pagination.endRecord} of{' '}
         {pagination.totalRecords} records. Page{' '}
         {pagination.page} of {pagination.totalPages}.
       </p>
 
-      
-<p
-  role="status"
-  className="grid-selection-status"
->
-  {selectionAnnouncement}
-</p>
-
-<div
-  className="grid-scroll"
-  role="region"
-  aria-label={`${ariaLabel} horizontal scroll area`}
-  tabIndex={0}
->
-
-
-      <table
-        ref={gridRef}
-        role="grid"
-        aria-label={ariaLabel}
-        onFocusCapture={(event) => {
-          if (
-            event.target instanceof HTMLTableCellElement
-          ) {
-            keyboardFocusInside.current = true;
-          }
-        }}
-        onBlurCapture={(event) => {
-          if (
-            !event.currentTarget.contains(
-              event.relatedTarget as Node | null
-            )
-          ) {
-            keyboardFocusInside.current = false;
-          }
-        }}
+      <p
+        role="status"
+        aria-live="polite"
+        className="grid-selection-status"
       >
-        <thead>
-          <tr role="row">
-            {columns.map((column, index) => (
-              
-            <th
-               key={index}
-               id={headerId(index)}
-               scope="col"
-              role="columnheader"
-> 
-              {column.header}
-            </th>
+        {selectionAnnouncement}
+      </p>
 
-            ))}
-          </tr>
-        </thead>
-
-        <tbody>
-          {pagination.rows.length === 0 ? (
+      <div
+        className="grid-scroll"
+        role="region"
+        aria-label={`${ariaLabel} horizontal scroll area`}
+        tabIndex={0}
+      >
+        <table
+          ref={gridRef}
+          role="grid"
+          aria-label={ariaLabel}
+          onFocusCapture={(event) => {
+            if (
+              event.target instanceof HTMLTableCellElement
+            ) {
+              keyboardFocusInside.current = true;
+            }
+          }}
+          onBlurCapture={(event) => {
+            if (
+              !event.currentTarget.contains(
+                event.relatedTarget as Node | null
+              )
+            ) {
+              keyboardFocusInside.current = false;
+            }
+          }}
+        >
+          <thead>
             <tr role="row">
-              <td
-                role="gridcell"
-                colSpan={columns.length}
-              >
-                {data.length === 0
-                  ? 'No records available.'
-                  : 'No matching records.'}
-              </td>
-            </tr>
-          ) : (
-            pagination.rows.map((record, rowIndex) => (
-              <tr
-                key={rowIndex}
-                role="row"
-                aria-selected={selectedRecord === record}
-                className={
-                  selectedRecord === record
-                    ? 'grid-row-selected'
-                    : undefined
-                }
-                onClick={() => selectRecord(record)}
-              >
-                {columns.map((column, columnIndex) => {
-                  const value = record[column.accessorKey];
-
-                  const display: ReactNode =
-                    value == null ? '—' : String(value);
-
-                  return (
-                    <td
-                      key={columnIndex}
-                      role="gridcell"
-                      headers={headerId(columnIndex)}
-                      tabIndex={
-                        activeCell.row === rowIndex &&
-                        activeCell.column === columnIndex
-                          ? 0
-                          : -1
-                      }
-                      onFocus={() => {
-                        keyboardFocusInside.current = true;
-
-                        setActiveCell({
-                          row: rowIndex,
-                          column: columnIndex,
-                        });
-                      }}
-                      onKeyDown={(event) =>
-                        handleCellKeyDown(
-                          event,
-                          rowIndex,
-                          columnIndex,
-                          record
-                        )
+              {columns.map((column, index) => (
+                <th
+                  key={index}
+                  id={headerId(index)}
+                  scope="col"
+                  role="columnheader"
+                  aria-sort={
+                    sort?.key === column.accessorKey
+                      ? sort.direction
+                      : undefined
+                  }
+                >
+                  {column.sortable === true ? (
+                    <button
+                      type="button"
+                      className="grid-sort-button"
+                      onClick={() => changeSort(column)}
+                      aria-label={
+                        sort?.key === column.accessorKey
+                          ? `Sort by ${column.header}, currently ${sort.direction}`
+                          : `Sort by ${column.header}`
                       }
                     >
-                      {columnIndex === 0 ? (
-                        <button
-                          type="button"
-                          tabIndex={-1}
-                          className="grid-select-button"
-                          aria-label={`Select row ${
-                            pagination.startRecord + rowIndex
-                          }: ${String(value ?? 'empty')}`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            selectRecord(record);
-                          }}
-                        >
-                          {display}
-                        </button>
-                      ) : (
-                        display
-                      )}
-                    </td>
-                  );
-                })}
+                      {column.header}
+                      <span aria-hidden="true">
+                        {sort?.key === column.accessorKey
+                          ? sort.direction === 'ascending'
+                            ? ' ▲'
+                            : ' ▼'
+                          : ''}
+                      </span>
+                    </button>
+                  ) : (
+                    column.header
+                  )}
+                </th>
+              ))}
+            </tr>
+          </thead>
+
+          <tbody>
+            {pagination.rows.length === 0 ? (
+              <tr role="row">
+                <td
+                  role="gridcell"
+                  colSpan={columns.length}
+                >
+                  {data.length === 0
+                    ? 'No records available.'
+                    : 'No matching records.'}
+                </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-</div>
+            ) : (
+              pagination.rows.map((record, rowIndex) => (
+                <tr
+                  key={rowIndex}
+                  role="row"
+                  aria-selected={selectedRecord === record}
+                  className={
+                    selectedRecord === record
+                      ? 'grid-row-selected'
+                      : undefined
+                  }
+                  onClick={() => selectRecord(record)}
+                >
+                  {columns.map((column, columnIndex) => {
+                    const value = record[column.accessorKey];
+
+                    const display: ReactNode =
+                      value == null ? '—' : String(value);
+
+                    return (
+                      <td
+                        key={columnIndex}
+                        role="gridcell"
+                        headers={headerId(columnIndex)}
+                        tabIndex={
+                          activeCell.row === rowIndex &&
+                          activeCell.column === columnIndex
+                            ? 0
+                            : -1
+                        }
+                        onFocus={() => {
+                          keyboardFocusInside.current = true;
+
+                          setActiveCell({
+                            row: rowIndex,
+                            column: columnIndex,
+                          });
+                        }}
+                        onKeyDown={(event) =>
+                          handleCellKeyDown(
+                            event,
+                            rowIndex,
+                            columnIndex,
+                            record
+                          )
+                        }
+                      >
+                        {columnIndex === 0 ? (
+                          <button
+                            type="button"
+                            tabIndex={-1}
+                            className="grid-select-button"
+                            aria-label={`Select row ${
+                              pagination.startRecord + rowIndex
+                            }: ${String(value ?? 'empty')}`}
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              selectRecord(record);
+                            }}
+                          >
+                            {display}
+                          </button>
+                        ) : (
+                          display
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
       <nav
         className="grid-pagination"
         aria-label={`${ariaLabel} pagination`}

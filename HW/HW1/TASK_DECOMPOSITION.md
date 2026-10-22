@@ -69,36 +69,31 @@ The project is ready for final review when:
 
 ---
 
-## 2. Before Starting: Repository Check
+## 2. Repository Check — Verified
 
-The repository was not available for inspection when this plan was written. Therefore, its framework, folder structure, scripts, and test tools are **not yet confirmed**.
+- Framework: React 19, TypeScript 5.8, and Vite 6.
+- Package manager: npm; `package-lock.json` is present.
+- Source: `src/`; tests: `tests/`, including Node tests and React component tests.
+- Available scripts: `npm run typecheck`, `npm test`, `npm run build`,
+  `npm run dev`, and `npm run preview`.
+- Browser: Chrome is installed. Lighthouse CLI 13.5.0 can run through npm exec.
+- Git branch at inspection: `main`. Existing user-provided coverage test was
+  untracked and was retained.
 
-The first task must inspect the project and update this plan with real findings. Do not guess file paths or invent test commands.
+### Confirmed behavior
 
-### Facts to confirm
+- Filtering searches all displayed columns, case-insensitively.
+- Page size is 10; filtering and sorting reset the page to 1.
+- Only explicitly sortable columns can be sorted; sorting is stable and does
+  not mutate source data.
+- Enter and Space select the focused row; arrows move the single active cell;
+  normal Tab behavior is retained.
+- Selection is by record reference and remains selected while filtered or
+  paginated out; it reappears if the same object becomes visible again.
+- The project owner accepted the semantic native table structure for the
+  incomplete “Zero div-soup: Must use native...” requirement.
 
-- [ ] Project framework and TypeScript setup.
-- [ ] Package manager and lockfile.
-- [ ] Existing source and test folders.
-- [ ] Existing test, lint, type-check, and build commands.
-- [ ] Existing component and styling conventions.
-- [ ] Current Git branch and working-tree changes.
-- [ ] Whether browser and Lighthouse checks are available.
-
-### Open question that must not be guessed
-
-The requirement says: **“Zero div-soup: Must use native...”** but the rest of the sentence is missing. Ask the instructor/user which HTML elements are required. Do not guess the missing requirement.
-
-Other decisions to confirm before they affect implementation:
-
-- What should the filter search: all displayed columns or individual columns?
-- What should happen when a selected row is filtered out or removed?
-- Should Enter and Space select a row?
-- Which keyboard-focus pattern should the grid use?
-- What page size and sorting behavior are expected?
-- Is there a required visual theme or design system?
-
-If a decision cannot be confirmed, record it as an open question and do not present it as an agreed requirement.
+Full screen-reader verification remains a manual accessibility task.
 
 ---
 
@@ -535,17 +530,31 @@ These are examples, not commits to make during the planning stage.
 
 ---
 
-## 8. Final Acceptance and Open Questions
+## 8. Final Acceptance and Remaining Limitations
 
-Before implementation starts, review these unresolved items:
+The repository, behavior, and native-table decisions listed in Section 2 have
+been confirmed. Automated checks and Lighthouse are available and run locally.
+Screen-reader verification cannot be established by automated checks alone and
+must be completed manually before claiming full WCAG 2.2 AA conformance.
 
-- [ ] Clarify the incomplete “Zero div-soup: Must use native...” requirement.
-- [ ] Confirm the repository and branch to work in.
-- [ ] Confirm filtering behavior and sorting rules.
-- [ ] Confirm page size and pagination behavior.
-- [ ] Confirm row-selection behavior and what happens when a row disappears.
-- [ ] Confirm the keyboard-focus model.
-- [ ] Confirm available tests and Lighthouse tooling.
+The controlled defect-and-repair exercise in Task 8.2 was not performed because
+the plan requires agreement on an intentional challenge defect before
+introducing one.
+
+### Verified implementation status — 2026-10-22
+
+- Implemented filtering, stable sorting, pagination, row selection, keyboard
+  navigation, empty states, header associations, responsive scrolling, and
+  selection announcements.
+- `npm test`: passed 42 tests (22 unit and 20 component tests).
+- `npm run typecheck`: passed.
+- `npm run build`: passed.
+- Lighthouse 13.5.0 / Headless Chrome 155 production preview at 375 px:
+  Performance 100, Accessibility 100, Best Practices 100, SEO 100.
+- Browser check at 375 px: no page-level horizontal overflow; the grid scrolls
+  within its own keyboard-focusable region.
+- Not verified: manual screen-reader behavior and a controlled challenge
+  defect. These limitations are not represented as completed WCAG conformance.
 
 ### Final handover checklist
 
@@ -558,4 +567,3 @@ Before implementation starts, review these unresolved items:
 - [ ] The final work has been reviewed before delivery.
 
 ---
-

@@ -8,6 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b",
+    "test": "npm run test:unit && npm run test:components",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:components": "tsx --tsconfig tsconfig.app.json --test tests/data-grid-coverage.test.tsx tests/data-grid-keyboard.test.tsx tests/data-grid-selection.test.tsx tests/data-grid-sorting.test.tsx tests/reproductions/pagination-filter-stale-page.repro.test.tsx",
     "test:t-05.1": "tsx --tsconfig tsconfig.app.json --test tests/data-grid-selection.test.tsx"
   },
   "dependencies": {

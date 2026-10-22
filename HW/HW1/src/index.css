@@ -97,6 +97,22 @@ main { max-width: 72rem; margin: 0 auto; padding: 1.5rem; }
   outline-offset: 2px;
 }
 
+.grid-sort-button {
+  padding: 0;
+  border: 0;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.grid-sort-button:focus-visible {
+  outline: 3px solid #005fcc;
+  outline-offset: 3px;
+}
+
 
 /* T-05.2–T-05.3: Visible keyboard cell focus */
 

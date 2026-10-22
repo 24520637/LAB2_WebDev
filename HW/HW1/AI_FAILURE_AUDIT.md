@@ -20,5 +20,31 @@ Commit: feat: add sortable column support
 - **Fix:** Compare numeric values with `<` and `>` instead of subtraction. Keep `null`, `undefined`, and `NaN` at the end in either direction; compare other value combinations by their string representation with a numeric-aware collator, preserving original order for ties.
 - **Status:** Fixed. All 9 focused sorting tests pass; `npm run build` passes; browser smoke testing verified ascending/descending row order, the active `aria-sort` state, and no sort button or ARIA sort state on the non-sortable column.
 
+## Final completion review — 2026-10-22
 
+- **Defect found:** The sorting helper and its unit tests existed, and the demo
+  marked columns sortable, but `DataGrid` did not call the helper. The user
+  interface therefore could not sort rows.
+- **Detection:** Reviewed the component's full filter/pagination pipeline and
+  confirmed the `sortRows` helper was never called by `DataGrid`. Added
+  component tests for ascending/descending sorting, non-sortable columns, sort
+  state, sorting after filtering, and page reset; all pass after the fix.
+- **Fix:** Connected the stable sorting helper between filtering and pagination,
+  reset the requested page on sort changes, and exposed `aria-sort` and native
+  sort buttons for explicitly sortable headers.
+- **Additional test defect found:** The stale-page reproduction test asserted a
+  hard-coded failure from manually slicing a filtered array instead of testing
+  the grid. Replaced it with a component-level regression test; it now verifies
+  filtering from page 3 actually returns five matching rows on page 1.
+- **Lighthouse defects found:** The production build lacked a favicon and meta
+  description, and had no valid robots.txt, causing 404/SEO audit failures.
+  Added a local SVG favicon, description metadata, and robots.txt.
+- **Verification:** `npm test` passed 42 tests (22 unit and 20 component tests);
+  `npm run typecheck` and `npm run build` passed. Lighthouse 13.5.0 with
+  Headless Chrome 155 scored 100/100 for Performance, Accessibility,
+  Best Practices, and SEO. At 375 px, the page had no horizontal overflow and
+  the table scrolled within its focusable region.
+- **Limitations:** Screen-reader behavior was not manually verified. The
+  controlled challenge-defect exercise was not run because the task plan
+  requires explicit agreement before introducing an intentional defect.
 

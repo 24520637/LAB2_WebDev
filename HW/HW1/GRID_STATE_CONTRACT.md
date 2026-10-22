@@ -1,33 +1,55 @@
-# Data Grid State Contract — T-02.2
+# Data Grid State Contract
 
-Planning document only. No Data Grid behavior is implemented in this task.
+This contract describes the implemented HW1 grid behavior.
 
-## State to track
+## Public API
 
-- **Sort:** active `accessorKey` (`keyof T`) or none, plus ascending/descending direction. Only columns explicitly marked `sortable: true` can activate sorting; omitted `sortable` means not sortable. Initial sort: none.
-- **Filter:** the current text query, initially empty. Search all displayed columns.
-- **Page:** a 1-based current page index, initially 1. Page size remains an open question.
-- **Keyboard focus:** current visible row/cell location, or none if there are no focusable cells. Focus must be reconciled when visible rows change. Exact arrow-key and Enter/Space behavior remains an open question.
-- **Selection:** selected record identity or none. `onRowSelect` is optional; absence must not throw. The identity strategy and what happens when a selected record is removed or filtered out remain open questions.
+`ColumnDef<T>` exposes a header, a `keyof T` accessor, and an optional
+`sortable` flag. A column is sortable only when `sortable: true`.
+`DataGridProps<T>` requires data, columns, and an accessible grid label;
+`onRowSelect` remains optional.
 
-## Derived data and operation order
+## State and data flow
 
-1. Start with `data` provided by the caller; do not mutate it.
-2. Apply the approved filter to obtain matching rows.
-3. Sort a copy of those rows if a sortable column is active; otherwise preserve their order. Comparator behavior for mixed, missing, and non-string values needs confirmation.
-4. Paginate the filtered/sorted rows using the approved page size.
-5. Render only the current page and derive accessible status information from the resulting view.
+- Filtering starts empty and searches all displayed columns case-insensitively.
+- Sorting starts inactive. Sortable values are compared stably; missing values
+  remain last in either direction. Mixed primitive values use natural
+  case-insensitive string order.
+- Pagination uses 10 rows per page. Filtering and changing sort reset the page
+  to page 1; data changes clamp the requested page to the current result range.
+- The grid derives rows in this order: filter, sort, paginate.
+- Operations work on copies and do not mutate the caller's data or records.
 
-## Changes and edge cases
+## Keyboard focus and selection
 
-- When a filter changes, return to page 1; if data changes, clamp the page to the available page range.
-- For zero matches, expose an empty state, with no selectable or focusable data cells; page controls must not point to a nonexistent page.
-- When the focused cell disappears after sorting, filtering, pagination, or data replacement, move focus to a valid visible location or to an appropriate grid control; never leave a stale focus reference.
-- Selection and focus are separate state. Behavior for selection of filtered-out/removed records is unresolved and must be approved before implementation.
-- Sorting and filtering must not modify the caller's `data` array or record objects.
+- The grid uses one tabbable visible cell. Arrow keys move within the current
+  page and stop at its boundaries. Enter and Space select the focused row;
+  Space does not scroll the page. Tab and Shift+Tab are not intercepted.
+- Focus is clamped to a valid visible cell when the visible result changes. If
+  there are no visible rows, focus returns to the filter input.
+- Selection is single-row and tracked by record reference identity. A selected
+  record remains selected while filtered out or paginated away; if that same
+  object appears again it is shown as selected. Replacing it with a distinct
+  object does not select the replacement.
+- Selection is independent of focus. The callback is optional and runs once per
+  selection action. The grid announces the selected row.
 
-## Open questions / blockers
+## Semantics and responsive behavior
 
-- The copied requirement `Zero div-soup: Must use native...` is incomplete; the required native HTML tags are unknown. Do not guess them.
-- Confirm page size, row identity, selection persistence, and keyboard focus/activation model before implementing those features.
-- No WCAG 2.2 AA or Lighthouse score is claimed by this planning document..
+- The grid uses a native `table`, `thead`, `tbody`, `tr`, `th`, and `td`
+  structure, with an accessible grid name and explicit row/header/cell roles.
+- Each data cell references its column header using the `headers` attribute.
+- Sort state is exposed with `aria-sort`; row selection is exposed using
+  `aria-selected`.
+- On narrow viewports the table scrolls inside a named, keyboard-focusable
+  horizontal region rather than widening the page.
+
+## Verification limitations
+
+Automated tests, typecheck, production build, browser layout checks, and
+Lighthouse can be run locally. Screen-reader behavior still requires manual
+verification with an assistive technology; Lighthouse is not a substitute.
+
+The original copied phrase “Zero div-soup: Must use native...” was incomplete.
+The project owner approved the current semantic native table structure; no
+additional required tag list was supplied.
