@@ -79,6 +79,19 @@ export class ReservationCoordinator {
     return this.#inventory.getSnapshot();
   }
 
+  /** Apply due expiries after visibility returns; timers are only UI hints. */
+  refresh() {
+    this.#assertActive();
+    const now = this.#currentTime();
+    const snapshot = this.#inventory.getSnapshot();
+    for (const reservation of snapshot.reservations) {
+      if (reservation.status === ReservationStatus.RESERVED && now >= reservation.expiresAt) {
+        this.#expireReservation(reservation.id);
+      }
+    }
+    return this.getSnapshot();
+  }
+
   /** Reserve stock with an optional caller-provided idempotency key. */
   reserve({ quantity, requestKey } = {}) {
     this.#assertActive();
