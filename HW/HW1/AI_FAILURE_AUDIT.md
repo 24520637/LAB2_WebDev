@@ -10,3 +10,10 @@ Commit: feat: implement accessible data grid foundation
 - **Detection:** `npm run typecheck` reported duplicate default exports and duplicate function implementations (`TS2323`, `TS2393`).
 - **Fix:** Removed the duplicate from the temporary demo, verified typecheck, then restored the original `App.tsx`.
 - **Status:** Fixed; the restored app passed the final typecheck and production build. Review of T-03.1–T-03.3 found no remaining confirmed defect in the grid component.
+
+## T-04.1–T-04.2 — Sorting
+
+- **Error found during review:** Numeric comparison used subtraction. Comparing equal infinities (for example, `Infinity - Infinity`) produces `NaN`, which can make the comparator treat distinct numeric values as equal and return an incorrect order.
+- **Detection:** Added ascending/descending regression coverage for positive and negative infinity alongside `NaN`, plus coverage for mixed number, string, and bigint values.
+- **Fix:** Compare numeric values with `<` and `>` instead of subtraction. Keep `null`, `undefined`, and `NaN` at the end in either direction; compare other value combinations by their string representation with a numeric-aware collator, preserving original order for ties.
+- **Status:** Fixed. All 9 focused sorting tests pass; `npm run build` passes; browser smoke testing verified ascending/descending row order, the active `aria-sort` state, and no sort button or ARIA sort state on the non-sortable column.
