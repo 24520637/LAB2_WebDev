@@ -1,5 +1,7 @@
 import { ReservationStatus } from './inventory.js';
 
+const identitySequences = new WeakMap();
+
 function assertPositiveFinite(value, name) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
     throw new RangeError(`${name} must be a positive finite number`);
@@ -25,6 +27,8 @@ function failure(code, product, reservation = null) {
 /**
  * Adds deadlines and best-effort scheduled expiry to a synchronous InventoryStore.
  * All action-time expiry checks use the injected wall clock, not timer delivery.
+ * Before expiry, the first synchronous terminal action wins; at the deadline,
+ * lazy expiry takes precedence over checkout or cancellation.
  */
 export class ReservationCoordinator {
   #inventory;
@@ -34,8 +38,7 @@ export class ReservationCoordinator {
   #cancelSchedule;
   #onChange;
   #timers = new Map();
-  #reservationSequence = 0;
-  #requestSequence = 0;
+  #sequences;
   #disposed = false;
 
   constructor({
@@ -65,6 +68,11 @@ export class ReservationCoordinator {
     this.#schedule = schedule;
     this.#cancelSchedule = cancelSchedule;
     this.#onChange = onChange;
+    this.#sequences = identitySequences.get(inventory) ?? {
+      reservation: 0,
+      request: 0,
+    };
+    identitySequences.set(inventory, this.#sequences);
   }
 
   getSnapshot() {
@@ -187,7 +195,7 @@ export class ReservationCoordinator {
   #nextUniqueReservationId() {
     let id;
     do {
-      id = `reservation-${++this.#reservationSequence}`;
+      id = `reservation-${++this.#sequences.reservation}`;
     } while (this.#findById(id));
     return id;
   }
@@ -195,7 +203,7 @@ export class ReservationCoordinator {
   #nextUniqueRequestKey() {
     let key;
     do {
-      key = `request-${++this.#requestSequence}`;
+      key = `request-${++this.#sequences.request}`;
     } while (this.#findByRequestKey(key));
     return key;
   }

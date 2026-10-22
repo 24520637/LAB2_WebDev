@@ -146,6 +146,95 @@ test('replayed idempotency key returns the same reservation without extending ex
   assert.equal(reserve(f, { requestKey: 'retry-key', quantity: 2 }).code, 'request_key_conflict');
 });
 
+test('same-store competing buyers cannot reserve the last unit', async () => {
+  const f = fixture({ stock: 1 });
+  const results = await Promise.all([
+    Promise.resolve().then(() => reserve(f, { requestKey: 'buyer-a' })),
+    Promise.resolve().then(() => reserve(f, { requestKey: 'buyer-b' })),
+  ]);
+
+  assert.deepEqual(results.map(result => result.ok), [true, false]);
+  assert.equal(results[1].code, 'insufficient_stock');
+  assert.equal(f.coordinator.getSnapshot().product.available, 0);
+  assert.equal(f.coordinator.getSnapshot().product.reserved, 1);
+  assert.equal(f.coordinator.getSnapshot().product.sold, 0);
+  assert.equal(f.coordinator.getSnapshot().reservations.length, 1);
+  assert.equal(
+    f.coordinator.getSnapshot().product.initialStock,
+    f.coordinator.getSnapshot().product.available +
+      f.coordinator.getSnapshot().product.reserved +
+      f.coordinator.getSnapshot().product.sold,
+  );
+});
+
+test('concurrent duplicate request keys return one reservation and allocate once', async () => {
+  const f = fixture({ stock: 2 });
+  const results = await Promise.all([
+    Promise.resolve().then(() => reserve(f, { requestKey: 'same-request' })),
+    Promise.resolve().then(() => reserve(f, { requestKey: 'same-request' })),
+  ]);
+
+  assert.equal(results[0].ok, true);
+  assert.equal(results[1].idempotent, true);
+  assert.equal(results[0].reservation.id, results[1].reservation.id);
+  assert.equal(f.coordinator.getSnapshot().product.available, 1);
+  assert.equal(f.coordinator.getSnapshot().product.reserved, 1);
+  assert.equal(f.coordinator.getSnapshot().reservations.length, 1);
+});
+
+test('coordinators sharing one store generate distinct IDs and request keys', () => {
+  const f = fixture({ stock: 2 });
+  const secondCoordinator = new ReservationCoordinator({
+    inventory: f.inventory,
+    ttlMs: 5_000,
+    now: () => 10_000,
+    schedule: () => 1,
+    cancelSchedule: () => {},
+  });
+
+  const first = reserve(f);
+  const second = secondCoordinator.reserve({ quantity: 1 });
+
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true);
+  assert.notEqual(first.reservation.id, second.reservation.id);
+  assert.notEqual(first.reservation.requestKey, second.reservation.requestKey);
+  assert.equal(f.coordinator.getSnapshot().product.reserved, 2);
+});
+
+test('first terminal action wins before expiry; deadline expiry takes precedence', () => {
+  const f = fixture({ stock: 2 });
+  const checkoutFirst = reserve(f);
+  const checkout = f.coordinator.checkout(checkoutFirst.reservation.id);
+  const laterCancel = f.coordinator.cancel(checkoutFirst.reservation.id);
+
+  assert.equal(checkout.ok, true);
+  assert.equal(laterCancel.code, 'already_terminal');
+  assert.equal(f.coordinator.getSnapshot().product.sold, 1);
+  assert.equal(f.coordinator.getSnapshot().product.available, 1);
+
+  const cancelFirst = reserve(f);
+  const cancelled = f.coordinator.cancel(cancelFirst.reservation.id);
+  const laterCheckout = f.coordinator.checkout(cancelFirst.reservation.id);
+
+  assert.equal(cancelled.ok, true);
+  assert.equal(laterCheckout.code, 'already_terminal');
+  assert.equal(f.coordinator.getSnapshot().product.available, 1);
+  assert.equal(f.coordinator.getSnapshot().product.reserved, 0);
+  assert.equal(f.coordinator.getSnapshot().product.sold, 1);
+
+  const expiryFirst = reserve(f);
+  f.setTime(expiryFirst.reservation.expiresAt);
+  f.fire([...f.timers.keys()][0]);
+  assert.equal(f.coordinator.getSnapshot().reservations.find(
+    reservation => reservation.id === expiryFirst.reservation.id,
+  ).status, ReservationStatus.EXPIRED);
+  assert.equal(f.coordinator.checkout(expiryFirst.reservation.id).code, 'already_terminal');
+  assert.equal(f.coordinator.getSnapshot().product.available, 1);
+  assert.equal(f.coordinator.getSnapshot().product.reserved, 0);
+  assert.equal(f.coordinator.getSnapshot().product.sold, 1);
+});
+
 test('rejects invalid TTL and removes pending expiry work on disposal', () => {
   const inventory = new InventoryStore({ productId: 'headphones', initialStock: 1 });
   for (const ttlMs of [0, -1, Infinity, NaN, '1000']) {
