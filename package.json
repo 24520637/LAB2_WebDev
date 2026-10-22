@@ -6,6 +6,8 @@
     "dev:hw2-smoke": "npm --prefix HW/HW1 run dev -- ../HW2",
     "build": "npm --prefix HW/HW1 run build",
     "test": "npm --prefix HW/HW1 test",
+    "test:hw2": "node --test HW/HW2/tests/*.test.mjs",
+    "test:all": "npm test && npm run test:hw2",
     "typecheck": "npm --prefix HW/HW1 run typecheck"
   }
 }

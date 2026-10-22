@@ -17,15 +17,25 @@ Build an ordered audio loading/decoding queue with controlled concurrency, Web A
 - **Verify:** Read repository tree, manifest and existing scripts; `git status --short` where Git is available. Do not assume `npm test` exists.
 
 **T-01 — Define queue contract and state transitions**
-- **Status:** Contract documented in **proposed new** `QUEUE_CONTRACT.md`; no runtime implementation or tests added.
+- **Status:** Contract documented in `QUEUE_CONTRACT.md` and implemented by
+  `src/fifo-queue.mjs` and `src/playback-coordinator.mjs`; transition,
+  serialization, cancellation and playback behavior are covered by tests.
 - **Objective:** Make FIFO order, unique task identity, resource ownership, and lifecycle behavior unambiguous.
 - **Scope:** Accepted IDs remain reserved for a queue instance lifetime; duplicate IDs reject without a second task; different IDs may share URLs. States: `queued`, `fetching`, `decoding`, `ready`, `playing`; terminal: `completed`, `cancelled`, `skipped`, `failed`. See complete transition table, events, cleanup ownership, and 15 contract verification scenarios in `QUEUE_CONTRACT.md`.
-- **Dependencies:** T-00; only two documentation files were present in supplied archive, so existing framework, source and test conventions remain unverified.
+- **Dependencies:** T-00; repository conventions and actual test/build scripts
+  were inspected before implementation.
 - **Files affected:** `TASK_DECOMPOSITION.md` (this T-01 entry), **new design document** `QUEUE_CONTRACT.md` (proposed addition). No application files/types/tests altered.
 - **Acceptance:** At most one fetch/decode worker, including while cancelled decode is still settling; at most one playing track; accepted tasks claimed FIFO; exactly one terminal outcome per finalized task; cancel(id) produces `cancelled` in any nonterminal phase, while skip() only targets a playing task and produces `skipped`; errors terminate only their matching tasks and do not stall the rest; late callbacks are ignored.
-- **Verification:** Contract scenarios C01–C15 specify expected duplicate-ID, FIFO, cancellation, skip, failure, race and disposal behavior. Not runnable against application code because no implementation/test setup was supplied. Tests deferred to T-02+.
+- **Verification:** Contract scenarios C01–C15 specify expected duplicate-ID,
+  FIFO, cancellation, skip, failure, race and disposal behavior. Runtime
+  coverage is included in `tests/fifo-queue.test.mjs`,
+  `tests/playback-coordinator.test.mjs` and
+  `tests/resource-cleanup.test.mjs`.
 
 **T-02 — Implement serialized FIFO controller**
+- **Status:** Implemented in `src/fifo-queue.mjs`; FIFO order, single-flight
+  loading/decoding, error continuation, cancellation and result handoff are
+  covered by unit tests.
 - **Objective:** Enqueue and drain tasks in order without race conditions.
 - **Scope:** Queue storage, worker loop, stable IDs, single-flight drain guard, dispatch of lifecycle events, automatic continuation after success/failure/cancellation.
 - **Dependencies:** T-01.
@@ -67,6 +77,9 @@ Build an ordered audio loading/decoding queue with controlled concurrency, Web A
   synthesized locally in memory; no audio file or external asset is required.
 
 **T-05 — Handle completion, skip and cancellation**
+- **Status:** Implemented in `src/playback-coordinator.mjs`; queued/fetching/
+  decoding/playing cancellation, sequential autoplay, repeated skip, natural
+  completion races and stale callbacks are covered by tests.
 - **Objective:** Make rapid controls deterministic and safe.
 - **Scope:** Support cancel queued (remove, never fetch); cancel fetching (abort); cancel decoding (invalidate late result); skip playing (stop and disconnect source, advance once); guard `onended`/`stop()` double completion with one-shot finalization and session IDs. Define sequential autoplay after unlock.
 - **Dependencies:** T-02–T-04.
@@ -75,6 +88,10 @@ Build an ordered audio loading/decoding queue with controlled concurrency, Web A
 - **Verify:** **Proposed tests:** cancel queued vs active in each phase, repeated skip, skip at natural end, cancel immediately after enqueue, stale callbacks.
 
 **T-06 — Render 60-FPS-target visualizer**
+- **Status:** Implemented in `src/canvas-visualizer.mjs` and integrated by
+  `src/main.mjs`; mocked lifecycle tests pass. Browser smoke testing on
+  2026-10-22 confirmed non-empty canvas bars during playback and that Stop
+  clears/stops the animation. A frame-rate performance trace was not measured.
 - **Objective:** Draw frequency bars without frame-by-frame component re-rendering.
 - **Scope:** Canvas preferred (or existing SVG approach); drive via `requestAnimationFrame`, call `getByteFrequencyData()` each frame, keep mutable audio data/context in refs or instance fields, scale for device pixel ratio, handle resize, stop when idle/hidden/unmounted. Treat 60 FPS as a performance target, not a guaranteed measured result.
 - **Dependencies:** T-04.
@@ -83,6 +100,9 @@ Build an ordered audio loading/decoding queue with controlled concurrency, Web A
 - **Verify:** **Proposed tests:** mocked RAF start/cancel, frame sampling and resize; **manual:** browser performance recording at target display refresh rate.
 
 **T-07 — Ensure cleanup and bounded ownership**
+- **Status:** Queue, loader, engine, coordinator and visualizer cleanup is
+  implemented and covered by `tests/resource-cleanup.test.mjs`. Browser heap
+  profiling was not performed.
 - **Objective:** Avoid leaked fetches, audio nodes, listeners, frames and retained buffers.
 - **Scope:** On track finish/skip/cancel and UI unmount: abort owned fetch, invalidate pending decode, stop source if active (catch already-stopped), disconnect nodes, cancel RAF, unregister listeners, clear task/buffer references. Define who owns shared `AudioContext` so shared contexts are not accidentally closed.
 - **Dependencies:** T-05–T-06.
@@ -91,6 +111,11 @@ Build an ordered audio loading/decoding queue with controlled concurrency, Web A
 - **Verify:** **Proposed tests:** unmount while queued/fetching/decoding/playing, repeated cleanup, spies on abort/stop/disconnect/cancelAnimationFrame; manually inspect browser heap and event listeners.
 
 **T-08 — Add usable controls, status and error feedback**
+- **Status:** Implemented in `index.html`, `style.css`,
+  `src/queue-ui-controller.mjs` and `src/main.mjs`; controller and markup
+  tests cover URL validation, semantic controls, focus styling, status/error
+  feedback, cancellation selection, duplicate-action prevention and disposal.
+  A separate keyboard-only/screen-reader manual pass remains unverified.
 - **Objective:** Expose predictable accessible queue interactions.
 - **Scope:** Track enqueue/play/skip/cancel controls, disabled states, ordered queue display, loading/decoding/playing/error messages; semantic `<button>` elements, keyboard activation and visible focus; label visualizer and provide text status instead of relying on bars alone; non-disruptive `aria-live` updates.
 - **Dependencies:** T-05–T-07.
@@ -99,6 +124,13 @@ Build an ordered audio loading/decoding queue with controlled concurrency, Web A
 - **Verify:** **Proposed tests:** UI events, disabled/aria states, keyboard actions; **manual:** keyboard-only and screen-reader smoke test.
 
 **T-09 — Integrate and test full lifecycle**
+- **Status:** Modules are wired through `src/main.mjs`. Deterministic
+  integration tests exercise FIFO load/decode/play/visualize/completion,
+  cancellation during queued and fetching phases, and recovery after decode
+  failure. Browser smoke tests separately verify the real Web Audio playback
+  and Canvas visualizer. A real cross-origin media endpoint and browser
+  performance trace were not used. `npm run test:all` passes 42 HW1 and 59
+  HW2 tests; `npm run build` succeeds.
 - **Objective:** Verify the complete enqueue → fetch → decode → play → visualize → finish chain.
 - **Scope:** Wire modules into framework entry point; test successful sequences and failures; use short, permitted test fixtures; check repeat navigation/unmount and browser visibility changes.
 - **Dependencies:** T-01–T-08.
@@ -108,7 +140,7 @@ Build an ordered audio loading/decoding queue with controlled concurrency, Web A
 
 ## Testing strategy and evidence
 
-Use deterministic unit tests with deferred promises for ordering/races and fakes for Web Audio, fetch, RAF and `AbortController`; supplement with real-browser smoke tests because autoplay policy, decoding, sound output and frame pacing cannot be fully verified with mocks. Log task ID/state transitions (without retaining large binary payloads). Before completion, record actual commands, pass/fail results, browser/version, short performance trace, and any unverified claims. No test runner or CLI command beyond repository inspection is assumed.
+Use deterministic unit tests with deferred promises for ordering/races and fakes for Web Audio, fetch, RAF and `AbortController`; supplement with real-browser smoke tests because autoplay policy, decoding, sound output and frame pacing cannot be fully verified with mocks. Log task ID/state transitions (without retaining large binary payloads). Before completion, record actual commands, pass/fail results, browser/version when available, performance measurements when taken, and any unverified claims. The repository root exposes `npm run test:hw2` and `npm run test:all`.
 
 ## Risks and decisions to review
 

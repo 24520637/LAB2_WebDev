@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Accessible FIFO audio queue with Web Audio playback and frequency visualizer.">
+  <title>FIFO Audio Queue</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="src/main.mjs"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to audio queue</a>
+  <main id="main" class="app">
+    <h1>FIFO Audio Queue</h1>
+    <p>Add a direct audio-file URL. Remote files must permit CORS, and playback requires a browser user gesture.</p>
+    <form id="add-form" novalidate>
+      <label for="audio-url">Audio file URL (HTTP or HTTPS)</label>
+      <div class="controls">
+        <input id="audio-url" type="url" inputmode="url" placeholder="https://example.com/audio.mp3" autocomplete="url" required aria-describedby="url-help" />
+        <button id="add-button" type="submit">Add track</button>
+      </div>
+      <p class="hint" id="url-help">Use a direct MP3, WAV or other browser-supported audio URL. Invalid links are rejected before loading.</p>
+    </form>
+    <section aria-labelledby="playback-heading">
+      <h2 id="playback-heading">Playback</h2>
+      <div class="controls">
+        <button id="play-button" type="button">Enable / resume audio</button>
+        <button id="skip-button" type="button" disabled>Skip current track</button>
+      </div>
+      <p id="playback-status">Idle. No active track.</p>
+      <p id="message" class="message">No tracks yet. Enter an audio URL to begin.</p>
+      <div id="announcement" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+      <canvas id="bars" role="img" aria-label="Live audio frequency bars; the current track is also described in text"></canvas>
+    </section>
+    <section aria-labelledby="queue-heading">
+      <h2 id="queue-heading">Ordered queue</h2>
+      <p id="empty-state">Queue is empty.</p>
+      <ol id="queue-list" aria-label="Tracks in FIFO order"></ol>
+      <div class="controls">
+        <label for="cancel-target">Select task to cancel</label>
+        <select id="cancel-target" disabled aria-label="Task to cancel"></select>
+        <button id="cancel-button" type="button" disabled>Cancel selected task</button>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
