@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Accessible flash-sale interface preview for a single demo product.">
+  <title>Flash Sale — Demo Preview</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./src/main.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <header class="site-header">
+    <div class="container header-inner">
+      <span class="wordmark">FLASH<span class="accent">/</span>SALE</span>
+      <span class="header-tag">Interface preview · No purchases</span>
+    </div>
+  </header>
+  <main id="main-content" class="container">
+    <div class="intro">
+      <p class="eyebrow">HW3 · SINGLE-PRODUCT DEMO</p>
+      <h1>Flash Sale Preview</h1>
+      <p class="intro-copy">A demonstration interface. Inventory, reservations, countdown, and checkout are not yet connected.</p>
+    </div>
+    <section class="sale-layout" aria-label="Demo flash sale">
+      <div class="product-art" aria-hidden="true">
+        <div class="art-glow"></div>
+        <div class="headphone"><div class="band"></div><div class="ear ear-left"></div><div class="ear ear-right"></div></div>
+        <span class="art-caption">DEMO PRODUCT <span>001 — AUDIO</span></span>
+      </div>
+      <div class="product-detail">
+        <div class="tag-row"><span class="pill">DEMO DEAL</span><span id="availability-badge" class="availability">Preview · In stock</span></div>
+        <h2 id="product-name">Aurora Wireless Headphones</h2>
+        <p class="product-description">Over-ear headphones in midnight blue · Illustrative product, not for sale.</p>
+        <div class="price-row"><strong id="product-price">$79.00</strong><span>Demo price · No charge</span></div>
+        <div class="timer-panel" aria-label="Sale countdown placeholder">
+          <div class="panel-heading"><span>SALE ENDS IN</span><span class="pending-label">NOT STARTED</span></div>
+          <div id="countdown-display" class="timer" role="timer" aria-label="Countdown not active">--:--:--</div>
+          <p class="panel-note">Timer will be implemented in T-03. This is a placeholder.</p>
+        </div>
+        <section class="inventory-panel" aria-labelledby="stock-heading">
+          <h3 id="stock-heading">Inventory snapshot <span class="small-muted">Demo only</span></h3>
+          <div class="inventory-grid">
+            <div><span class="stat-label">Available</span><strong id="stock-available">12</strong></div>
+            <div><span class="stat-label">Reserved</span><strong id="stock-reserved">0</strong></div>
+            <div><span class="stat-label">Sold</span><strong id="stock-sold">0</strong></div>
+          </div>
+        </section>
+        <div class="actions" aria-label="Sale actions (unavailable)">
+          <button type="button" id="reserve-button" disabled>Reserve item</button>
+          <button type="button" id="checkout-button" disabled>Checkout</button>
+          <button type="button" id="cancel-button" disabled>Cancel reservation</button>
+        </div>
+        <p class="action-note">All sale actions are disabled until later implementation tasks. No reservation or payment is made.</p>
+        <div id="sale-message" class="status-message" role="status" aria-live="polite" aria-atomic="true">Preview ready. No active reservation.</div>
+      </div>
+    </section>
+    <section class="preview-tools" aria-labelledby="preview-heading">
+      <div><h2 id="preview-heading">Preview presentation states</h2><p>Use this selector to inspect the interface without changing inventory.</p></div>
+      <div class="preview-select-wrap"><label for="preview-state">Display scenario</label>
+        <select id="preview-state"><option value="initial">Initial (in stock)</option><option value="loading">Loading preview</option><option value="empty">Out of stock</option><option value="error">Error preview</option></select>
+      </div>
+    </section>
+  </main>
+  <footer class="container footer">Educational frontend preview · No live sale or server connection</footer>
+</body>
+</html>
