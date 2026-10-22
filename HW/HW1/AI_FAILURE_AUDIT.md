@@ -12,7 +12,9 @@ Commit: feat: implement accessible data grid foundation
 - **Status:** Fixed; the restored app passed the final typecheck and production build. Review of T-03.1–T-03.3 found no remaining confirmed defect in the grid component.
 
 ## T-04.1–T-04.2 — Sorting
-
+- **Prompt that caused the error:** Read TASK_DECOMPOSITION.md and PROJECT_RULE.md first. Implement T-04.1 and T-04.2: sorting in both directions, sortable-column restrictions, and accessible sort state.
+Include tests for strings, numbers, missing values, and non-sortable columns. 
+Commit: feat: add sortable column support
 - **Error found during review:** Numeric comparison used subtraction. Comparing equal infinities (for example, `Infinity - Infinity`) produces `NaN`, which can make the comparator treat distinct numeric values as equal and return an incorrect order.
 - **Detection:** Added ascending/descending regression coverage for positive and negative infinity alongside `NaN`, plus coverage for mixed number, string, and bigint values.
 - **Fix:** Compare numeric values with `<` and `>` instead of subtraction. Keep `null`, `undefined`, and `NaN` at the end in either direction; compare other value combinations by their string representation with a numeric-aware collator, preserving original order for ties.
